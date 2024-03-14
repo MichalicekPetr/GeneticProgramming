@@ -37,6 +37,7 @@ private:
 	string password;
 	int port;
 	string url;
+	bool saveDbToMemory;
 
 	double randomIndividualProb;
 
@@ -50,12 +51,19 @@ private:
 	int vectorGA_populationSize;
 	double vectorGA_newIndividualRatio;
 
-	bool saveDbToMemory;
+	bool datFile;
+	string GPGAdataFolderPath;
+	string GPdataFolderPath;
+
+	bool useWindow;
+	int windowHeight;
+	int windowWidth;
+	
 
 public:
 	GeneticProgramming();
 	
-	void standartRun(const int& maxGenerationNum = -1, const int& startTreeDepth = -1);
+	void standartRun(const int& maxGenerationNum = -1, const int& startTreeDepth = -1, bool debugPrints = true);
 
 	void setPopulation(Population population);
 	void setFunctionSet(FunctionSet functionSet);
@@ -71,11 +79,16 @@ public:
 	void setTuneConstants(const bool& tuneConstants, const double& tuneConstantsMaxTime = 0.0);
 	void setVectorGAParams(const double & crossoverProb, const double & mutationProb, const int & tournamentSize,
 		const double & randomIndividualProb, const int & populationSize, const double & newIndividualRatio);
+	void setOutputFileParams(bool datFile, string GPdataFolderPath, string GPGAdataFolderPath);
+	void setWindowParams(bool useWindow, int windowHeight, int windowWidth);
 
 	vector<double> tuneConstants(Individual & individual, vector<double> originalConstants, shared_ptr<map<int, map<string, double>>> dbTablePtr = nullptr);
 
 	shared_ptr<map<int, map<string, double>>> saveDbTableInMemory();
-	
+	shared_ptr<map<int, map<string, double>>> saveDbTableInMemory(const vector<int>& primaryKeys, const vector<string>& colNames);
+	shared_ptr<map<int, map<string, double>>> createWindow(vector<pair<int, double>> & targetValues);
+
+	string createFileName() const;
 };
 
 

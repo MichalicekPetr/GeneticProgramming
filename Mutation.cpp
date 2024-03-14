@@ -59,6 +59,11 @@ void SubtreeMutation::mutate(Individual& individual)
 	}
 }
 
+void SubtreeMutation::setTerminalSet(TerminalSet termSet)
+{
+	this->termSet = termSet;
+}
+
 NodeReplacementMutation::NodeReplacementMutation() : NodeReplacementMutation(0.0, FunctionSet(), TerminalSet())
 {
 }
@@ -68,6 +73,11 @@ NodeReplacementMutation::NodeReplacementMutation(const double& mutationProb, con
 	this->mutationProb = mutationProb;
 	this->termSet = termSet;
 	this->funcSet = funcSet;
+}
+
+void NodeReplacementMutation::setTerminalSet(TerminalSet termSet)
+{
+	this->termSet = termSet;
 }
 
 void NodeReplacementMutation::mutate(Individual& individual)
@@ -115,4 +125,11 @@ void CombinedMutation::mutate(Individual& individual)
 {
 	this->subTreeMutation.mutate(individual);
 	this->nodeReplacementMutation.mutate(individual);
+}
+
+void CombinedMutation::setTerminalSet(TerminalSet termSet)
+{
+	this->termSet = termSet;
+	this->subTreeMutation.setTerminalSet(termSet);
+	this->nodeReplacementMutation.setTerminalSet(termSet);
 }

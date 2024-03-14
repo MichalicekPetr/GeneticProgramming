@@ -64,4 +64,5 @@ public:
 	double getMax() const;
 	double getMin() const;
 	bool containsRealNumbers() const;
+	vector<string> getColNames() const;
 };

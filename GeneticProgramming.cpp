@@ -1,6 +1,9 @@
+#include <ctime>
+#include <fstream>
 #include <chrono>
 #include <iostream>
 #include <limits>
+#include <stdexcept>
 
 #include "GeneticProgramming.h"
 #include "Population.h"
@@ -33,25 +36,44 @@ GeneticProgramming::GeneticProgramming()
 	this->vectorGA_populationSize = 0;
 	this->vectorGA_newIndividualRatio = 0.0;
 	this->saveDbToMemory = false;
+	this->datFile = false;
+	this->port = 0;
+	this->useWindow = false;
+	this->windowHeight = 0;
+	this->windowWidth = 0;
 }
 
-void GeneticProgramming::standartRun(const int & maxGenerationNum, const int & startTreeDepth)
+void GeneticProgramming::standartRun(const int & maxGenerationNum, const int & startTreeDepth, bool debugPrints)
 {
-
 	connection->connectToDb(this->url, this->user, this->password, this->dbName, this->port);
 	shared_ptr<map<int, map<string, double>>> dbMapPtr;
 	vector<pair<int, double>> targetValues(0);
-	if (this->saveDbToMemory) {
-		dbMapPtr = this->saveDbTableInMemory();
-		targetValues = this->connection->getTargetVarValues(this->target, this->primaryKey, this->tableName);
-	}
 	
+	if (this->useWindow) {
+		dbMapPtr = this->createWindow(targetValues);
+		this->saveDbToMemory = true;
+	}
+	else {
+		if (this->saveDbToMemory) {
+			dbMapPtr = this->saveDbTableInMemory();
+			targetValues = this->connection->getTargetVarValues(this->target, this->primaryKey, this->tableName);
+		}
+	}
+
 	int generationNum = 0;
 	int populationSize = this->population.getSize();
 	this->population.initPopulation(startTreeDepth, this->functionSet, this->terminalSet);
 	FitnessFunction * fitness = this->fitnessFunc.get();
 	Individual bestOfBest;
 	double bestScore = - numeric_limits<double>::infinity();
+	
+	ofstream file;
+	if (this->datFile) {
+		string fileName = this->createFileName();
+		file = ofstream(fileName);
+	}
+
+
 
 	while (true) {
 		generationNum++;
@@ -59,13 +81,15 @@ void GeneticProgramming::standartRun(const int & maxGenerationNum, const int & s
 			break;
 		}
 
-		cout << "---------------------- Generation n." << generationNum << " ----------------------" << endl;
-
+		if (debugPrints) {
+			cout << "---------------------- Generation n." << generationNum << " ----------------------" << endl;
+		}
+		
 		if (this->constantTuning) {
 			for (int i = 0; i < this->population.getSize(); i++) {
 
 				Individual & individualRef = population.at(i);
-				double scoreBefore = fitness->evaluate(population.at(i), this->connection, this->dbName, this->tableName, this->target, this->primaryKey);
+				double scoreBefore = fitness->evaluate(population.at(i), dbMapPtr, targetValues);
 				if (individualRef.hasConstantTable()) {
 					vector<double> constants = this->tuneConstants(individualRef, individualRef.getConstantTableRef().getTable(), dbMapPtr);
 					population.at(i).getConstantTableRef().setTable(constants);
@@ -76,7 +100,7 @@ void GeneticProgramming::standartRun(const int & maxGenerationNum, const int & s
 					population.at(i).getConstantTableRef().setTable(constants);
 				}
 
-				double scoreAfter = fitness->evaluate(population.at(i), this->connection, this->dbName, this->tableName, this->target, this->primaryKey);
+				double scoreAfter = fitness->evaluate(population.at(i), dbMapPtr, targetValues);
 				cout << "Before: " << scoreBefore << "; After: " << scoreAfter << endl;
 			}
 		}
@@ -126,10 +150,18 @@ void GeneticProgramming::standartRun(const int & maxGenerationNum, const int & s
 				}
 			}
 		}
-		cout << "Average fitness: " << acc / (populationSize - infCnt) << endl;
-		cout << "Average depth: " << depthAcc / (populationSize - infCnt) << endl;
-		cout << "Best fitness: " << maxFitness << endl;
-		cout << "Best individual: " << endl << this->population.at(bestIndividualIdx) << endl;
+
+		if(debugPrints){
+			cout << "Average fitness: " << acc / (populationSize - infCnt) << endl;
+			cout << "Average depth: " << depthAcc / (populationSize - infCnt) << endl;
+			cout << "Best fitness: " << maxFitness << endl;
+			cout << "Best individual: " << endl << this->population.at(bestIndividualIdx) << endl;
+		}
+
+
+		if (this->datFile) {
+			file << generationNum << " " << acc / (populationSize - infCnt) << " " << maxFitness << endl;
+		}
 
 		if ((bestScore == - 0) || (bestScore == 0)) {
 			break;
@@ -165,9 +197,15 @@ void GeneticProgramming::standartRun(const int & maxGenerationNum, const int & s
 		this->population.setPopulation(newPopulation);
 	}
 
-	cout << "End of genetic programming" << endl;
-	cout << "Best fitness: " << bestScore << endl;
-	cout << "Best individual (depth: " << bestOfBest.getMaxDepth() << "): " << endl << bestOfBest << endl;
+	if (debugPrints) {
+		cout << "End of genetic programming" << endl;
+		cout << "Best fitness: " << bestScore << endl;
+		cout << "Best individual (depth: " << bestOfBest.getMaxDepth() << "): " << endl << bestOfBest << endl;
+	}
+
+	if (this->datFile) {
+		file.close();
+	}
 } 
 
 void GeneticProgramming::setPopulation(Population population)
@@ -249,6 +287,20 @@ void GeneticProgramming::setVectorGAParams(const double& crossoverProb, const do
 	this->vectorGA_populationSize = populationSize;
 }
 
+void GeneticProgramming::setOutputFileParams(bool datFile, string GPdataFolderPath, string GPGAdataFolderPath)
+{
+	this->datFile = datFile;
+	this->GPdataFolderPath = GPdataFolderPath;
+	this->GPGAdataFolderPath = GPGAdataFolderPath;
+}
+
+void GeneticProgramming::setWindowParams(bool useWindow, int windowHeight, int windowWidth)
+{
+	this->useWindow = useWindow;
+	this->windowHeight = windowHeight;
+	this->windowWidth = windowWidth;
+}
+
 vector<double> GeneticProgramming::tuneConstants(Individual& individual, vector<double> originalConstants, shared_ptr<map<int, map<string, double>>> dbTablePtr)
 {
 	int size = individual.getConstantTableRef().getSize();
@@ -282,6 +334,79 @@ shared_ptr<map<int, map<string, double>>> GeneticProgramming::saveDbTableInMemor
 		dbMapPtr->insert({idx, rowMap});
 	}
 	return dbMapPtr;
+}
+
+shared_ptr<map<int, map<string, double>>> GeneticProgramming::saveDbTableInMemory(const vector<int> & primaryKeys, const vector<string> & colNames)
+{
+	shared_ptr<map<int, map<string, double>>> dbMapPtr(new map<int, map<string, double>>());
+	for (const auto& idx : primaryKeys) {
+		map <string, double> rowMap = this->connection->getRow(this->dbName, this->tableName, idx, colNames);
+		dbMapPtr->insert({ idx, rowMap });
+	}
+	return dbMapPtr;
+}
+
+shared_ptr<map<int, map<string, double>>> GeneticProgramming::createWindow(vector<pair<int, double>>& targetValues)
+{
+	vector<int> primaryKeys = this->connection->getPrimaryKeys(this->primaryKey, this->tableName);
+	vector<string> colNames = this->connection->getColNamesWithoutTargetAndPrimaryKey(this->dbName, this->tableName,
+		this->target, this->primaryKey);
+
+	if (primaryKeys.size() < this->windowHeight) {
+		cout << "Vìtší výška okna než poèet øádkù v tabulce" << endl;
+		throw invalid_argument("");
+	}
+
+	if (colNames.size() < this->windowWidth) {
+		cout << "Vìtší šírka okna než poèet sloupcù v tabulce" << endl;
+		throw invalid_argument("");
+	}
+
+	vector<int> rowsIdxs = Random::randInts(0, primaryKeys.size() - 1, this->windowHeight);
+	vector<int> colsIdxs = Random::randInts(0, colNames.size() - 1, this->windowWidth);
+	vector<int> chosenPrimaryKeys(0);
+	vector<string> chosenColNames(0);
+	for (const auto& idx : rowsIdxs) {
+		chosenPrimaryKeys.push_back(primaryKeys[idx]);
+	}
+	for (const auto& idx : colsIdxs) {
+		chosenColNames.push_back(colNames[idx]);
+	}
+
+	this->terminalSet = TerminalSet(this->terminalSet.getMin(), this->terminalSet.getMax(), this->terminalSet.containsRealNumbers(), chosenColNames);
+	this->mutation->setTerminalSet(TerminalSet(this->terminalSet.getMin(), this->terminalSet.getMax(), this->terminalSet.containsRealNumbers(), chosenColNames));
+	vector<pair<int, double>> chosenTargetValues = this->connection->getTargetVarValues(this->target, this->primaryKey, this->tableName, chosenPrimaryKeys);
+	for (auto x : chosenTargetValues) {
+		targetValues.push_back(x);
+	}
+
+	return this->saveDbTableInMemory(chosenPrimaryKeys, chosenColNames);
+}
+
+string GeneticProgramming::createFileName() const
+{
+	time_t t = time(0);  
+	tm now{};
+	localtime_s(&now, &t);
+
+	int year = now.tm_year + 1900;
+	int month = now.tm_mon + 1;
+	int day = now.tm_mday;
+	int hour = now.tm_hour;
+	int minutes = now.tm_min;
+	int seconds = now.tm_sec;
+
+
+	string fileName = "";
+	if (this->constantTuning) {
+		fileName = fileName + this->GPGAdataFolderPath + "GP+GA_";
+	}
+	else {
+		fileName = fileName + this->GPdataFolderPath + "GP_";
+	}
+	fileName += to_string(year) + "_" + to_string(month) + "_" + to_string(day) + 
+		"_" + to_string(hour) + "_" + to_string(minutes) + "_" + to_string(seconds) + ".dat";
+	return fileName;
 }
 
 

@@ -39,7 +39,7 @@ double ClassicFitnessFunction::evaluate(const Individual& individual, shared_ptr
 	int rowCnt = 0;
 
 	for (const auto& x : targetVarValues) {
-		rowCnt += 1;
+ 		rowCnt += 1;
 		int rowIdx = x.first;
 		double target = x.second;
 		double result = individual.evaluateTree(dbMapPtr->at(rowIdx));

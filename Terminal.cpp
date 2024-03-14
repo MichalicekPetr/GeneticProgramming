@@ -191,3 +191,8 @@ bool TerminalSet::containsRealNumbers() const
 {
 	return this->realNumbers;
 }
+
+vector<string> TerminalSet::getColNames() const
+{
+	return this->colNames;
+}
