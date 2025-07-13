@@ -8,6 +8,7 @@
 
 #include "Connection.h"
 #include "Crossover.h"
+#include "DatabaseScripts.h"
 #include "Fitness.h"
 #include "Function.h"
 #include "GeneticProgramming.h"
@@ -28,16 +29,17 @@ void tuneHyperParamatersGP() {
 
     ofstream file("C:/Users/petrm/Desktop/GeneticPrograming/Data/Hyperparamtuning.txt");
 
+    MysqlConnection connection;
+    connection.connectToDb("localhost", "root", "krtek", "testdb", 3306);
+    vector<string> colNames = connection.getColNames("testdb", "table_c");
+    colNames.erase(std::remove(colNames.begin(), colNames.end(), "y"), colNames.end());
+
     for (const auto x1 : subtreeMutationProbs) {
         for (const auto x2 : nodeMutationProbs) {
             for (const auto x3 : tournamentSizes) {
                 for (const auto x4 : crossoverProbs) {
                     for (const auto x5 : randomIndividualProbs) {
-                        MysqlConnection connection;
-                        connection.connectToDb("localhost", "root", "krtek", "testdb", 3306);
-                        vector<string> colNames = connection.getColNames("testdb", "table_c");
-                        colNames.erase(std::remove(colNames.begin(), colNames.end(), "y"), colNames.end());
-
+                        cout << x1 << " " << x2 << " " << x3 << " " << x4 << " " << x5 << endl;
                         FunctionSet funcSet = FunctionSet::createArithmeticFunctionSet();
                         TerminalSet termSet = TerminalSet(-5, 5, false, colNames);
 
@@ -185,7 +187,13 @@ int main()
         cout << "Tree after mutation:" << endl << tree1 << endl;
          */
         
-        cout << "Press 1 for genetic programming or 2 for genetic programming with constant tuning or 3 for genetic programming with window" << endl;
+        cout << "Press key and choose mode:\n"
+            "1 for genetic programming\n"
+            "2 for genetic programming with constant tuning\n"
+            "3 for genetic programming with window\n"
+            "4 for show table create script\n"
+            "5 for show row insert script\n"
+            "6 for hyperparam tuning\n" << endl;
         int choice;
         cin >> choice;
 
@@ -279,8 +287,8 @@ int main()
             geneticProgramming.setFunctionSet(funcSet);
             geneticProgramming.setTerminalSet(termSet);
 
-            double subtreeMutProb = 0.02;
-            double replaceNodeMutProb = 0.005;
+            double subtreeMutProb = 0.03;
+            double replaceNodeMutProb = 0.007;
             geneticProgramming.setMutation(unique_ptr<Mutation>(new CombinedMutation(subtreeMutProb, replaceNodeMutProb, funcSet, termSet)));
 
             int tournamentSize = 4;
@@ -315,10 +323,10 @@ int main()
             geneticProgramming.setTuneConstants(constantTuning, constantTuningMaxTime);
 
             double vectorGA_crossoverProb = 0.6;
-            double vectorGA_mutationProb = 0.02;
+            double vectorGA_mutationProb = 0.03;
             int vectorGA_populationSize = 50;
             int vectorGA_tournamentSize = 4;
-            double vectorGA_randomIndividualProb = 0.02;
+            double vectorGA_randomIndividualProb = 0.03;
             double vectorGA_newIndividualRatio = 0.8;
             geneticProgramming.setVectorGAParams(vectorGA_crossoverProb, vectorGA_mutationProb, vectorGA_tournamentSize,
                 vectorGA_randomIndividualProb, vectorGA_populationSize, vectorGA_newIndividualRatio);
@@ -407,8 +415,18 @@ int main()
             geneticProgramming.setWindowParams(useWindow, windowHeight, windowWidth);
             geneticProgramming.standartRun(1000, 4);
         }
-        else {
+        else if (choice == 4) {
+            DatabaseScripts::createTableInsertScriptTestDb1();
+        }
+        else if (choice == 5) {
+            DatabaseScripts::createRowInsertScriptTestDb1();
+        }
+        else if (choice == 6) {
             tuneHyperParamatersGP();
+        }
+        else {
+            MysqlConnection connection;
+            connection.connectToDb("localhost", "root", "krtek", "testschema", 3306);
         }
 
 

@@ -18,11 +18,13 @@ public:
 	virtual vector<pair<int, double>> getTargetVarValues(string targetVarName, string primaryKeyName, string tableName) const = 0;
 	virtual vector<pair<int, double>> getTargetVarValues(string targetVarName, string primaryKeyName, string tableName, const vector<int>& rowIdxs) const = 0;
 	virtual vector<int> getPrimaryKeys(string primaryKeyName, string tableName) const = 0;
+	virtual bool isConnectedToDb() const = 0;
 };
 
 class MysqlConnection : public Connection {
 private:
 	MYSQL* conn;
+	bool connectedToDb;
 
 public:
 	MysqlConnection();
@@ -35,5 +37,6 @@ public:
 	vector<pair<int, double>> getTargetVarValues(string targetVarName, string primaryKeyName, string tableName, const vector<int> & rowIdxs) const override;
 	vector<int> getPrimaryKeys(string primaryKeyName, string tableName) const override;
 	void close();
+	bool isConnectedToDb() const override; 
 };
 

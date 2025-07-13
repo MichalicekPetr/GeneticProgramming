@@ -45,7 +45,10 @@ GeneticProgramming::GeneticProgramming()
 
 void GeneticProgramming::standartRun(const int & maxGenerationNum, const int & startTreeDepth, bool debugPrints)
 {
-	connection->connectToDb(this->url, this->user, this->password, this->dbName, this->port);
+	if (!this->connection->isConnectedToDb()) {
+		connection->connectToDb(this->url, this->user, this->password, this->dbName, this->port);
+	}
+
 	shared_ptr<map<int, map<string, double>>> dbMapPtr;
 	vector<pair<int, double>> targetValues(0);
 	

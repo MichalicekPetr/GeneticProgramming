@@ -9,6 +9,7 @@ using namespace std;
 MysqlConnection::MysqlConnection()
 {
 	this->conn = mysql_init(0);
+	this->connectedToDb = false;
 }
 
 void MysqlConnection::connectToDb(string url, string user, string password, string dbName, int port)
@@ -19,6 +20,7 @@ void MysqlConnection::connectToDb(string url, string user, string password, stri
 	}
 	else {
 		cout << "Connection successfull" << endl;
+		this->connectedToDb = true;
 	}
 }
 
@@ -205,6 +207,11 @@ vector<int> MysqlConnection::getPrimaryKeys(string primaryKeyName, string tableN
 		throw runtime_error("Query failed");
 	}
 	return primaryKeys;
+}
+
+bool MysqlConnection::isConnectedToDb() const
+{
+	return this->connectedToDb;
 }
 
 Connection::Connection()
