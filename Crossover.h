@@ -11,7 +11,7 @@ class Crossover
 	string name;
 
 public:
-	virtual Individual createOffspring(const Individual & parent1, const Individual& parent2) const = 0;
+	virtual Individual createOffspring(const Individual & parent1, const Individual& parent2, const int & maxDepth) const = 0;
 };
 
 class TwoPointCrossover : public Crossover {
@@ -22,7 +22,7 @@ private:
 public:
 	TwoPointCrossover();
 	TwoPointCrossover(double leafPickProb);
-	Individual createOffspring(const Individual& parent1, const Individual& parent2) const override;
+	Individual createOffspring(const Individual& parent1, const Individual& parent2, const int& maxDepth) const override;
 };
 
 

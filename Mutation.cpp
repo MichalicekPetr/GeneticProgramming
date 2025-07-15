@@ -19,15 +19,17 @@ SubtreeMutation::SubtreeMutation(const double& mutationProb, const FunctionSet& 
 	this->funcSet = funcSet;
 }
 
-void SubtreeMutation::mutate(Individual& individual)
+void SubtreeMutation::mutate(Individual& individual, const int & maxDepth)
 {
 	double seed = Random::randProb();
 	if (seed <= this->mutationProb) {
 		Node* point = individual.pickRandomNode();
 		int nodeCnt = 0;
-		int maxDepth = 0;
-		individual.getTreeInfoRec(point, nodeCnt, maxDepth, 1);
-		int newDepth = Random::randInt(1, ceil(maxDepth * 1.5));
+		int depth = 0;
+		individual.getTreeInfoRec(point, nodeCnt, depth, 1);
+		int newDepthUpperbound = min(ceil(maxDepth + 2), maxDepth);
+
+		int newDepth = Random::randInt(1, newDepthUpperbound);
 
 		Node* subTree;
 		double seed2 = Random::randProb();
@@ -51,9 +53,9 @@ void SubtreeMutation::mutate(Individual& individual)
 		}
 
 		nodeCnt = 0;
-		maxDepth = 0;
-		individual.getTreeInfoRec(individual.getRoot(), nodeCnt, maxDepth, 1);
-		individual.setDepth(maxDepth);
+		depth = 0;
+		individual.getTreeInfoRec(individual.getRoot(), nodeCnt, depth, 1);
+		individual.setDepth(depth);
 		individual.setNodeCnt(nodeCnt);
 		individual.resetConstantTable();
 	}
@@ -80,7 +82,7 @@ void NodeReplacementMutation::setTerminalSet(TerminalSet termSet)
 	this->termSet = termSet;
 }
 
-void NodeReplacementMutation::mutate(Individual& individual)
+void NodeReplacementMutation::mutate(Individual& individual, const int & maxDepth)
 {
 	int nodeCnt = individual.getNodeCnt();
 	for (int i = 0; i < nodeCnt; i++) {
@@ -121,10 +123,10 @@ CombinedMutation::CombinedMutation(const double& nodeReplacementMutationProb, co
 	this->subTreeMutation = SubtreeMutation(subTreeMutationProb, funcSet, termSet);
 }
 
-void CombinedMutation::mutate(Individual& individual)
+void CombinedMutation::mutate(Individual& individual, const int& maxDepth)
 {
-	this->subTreeMutation.mutate(individual);
-	this->nodeReplacementMutation.mutate(individual);
+	this->subTreeMutation.mutate(individual, maxDepth);
+	this->nodeReplacementMutation.mutate(individual, maxDepth);
 }
 
 void CombinedMutation::setTerminalSet(TerminalSet termSet)

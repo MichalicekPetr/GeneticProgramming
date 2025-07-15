@@ -41,6 +41,7 @@ GeneticProgramming::GeneticProgramming()
 	this->useWindow = false;
 	this->windowHeight = 0;
 	this->windowWidth = 0;
+	this->maxTreeDepth = 10;
 }
 
 void GeneticProgramming::standartRun(const int & maxGenerationNum, const int & startTreeDepth, bool debugPrints)
@@ -48,6 +49,7 @@ void GeneticProgramming::standartRun(const int & maxGenerationNum, const int & s
 	if (!this->connection->isConnectedToDb()) {
 		connection->connectToDb(this->url, this->user, this->password, this->dbName, this->port);
 	}
+
 
 	shared_ptr<map<int, map<string, double>>> dbMapPtr;
 	vector<pair<int, double>> targetValues(0);
@@ -88,9 +90,11 @@ void GeneticProgramming::standartRun(const int & maxGenerationNum, const int & s
 			cout << "---------------------- Generation n." << generationNum << " ----------------------" << endl;
 		}
 		
+		double accImp = 0.0;
 		if (this->constantTuning) {
+			
 			for (int i = 0; i < this->population.getSize(); i++) {
-
+				double improvementAcc = 0;
 				Individual & individualRef = population.at(i);
 				double scoreBefore = fitness->evaluate(population.at(i), dbMapPtr, targetValues);
 				if (individualRef.hasConstantTable()) {
@@ -105,6 +109,7 @@ void GeneticProgramming::standartRun(const int & maxGenerationNum, const int & s
 
 				double scoreAfter = fitness->evaluate(population.at(i), dbMapPtr, targetValues);
 				cout << "Before: " << scoreBefore << "; After: " << scoreAfter << endl;
+				accImp += min(100, -((scoreBefore + scoreAfter) / scoreBefore));
 			}
 		}
 
@@ -157,6 +162,7 @@ void GeneticProgramming::standartRun(const int & maxGenerationNum, const int & s
 		if(debugPrints){
 			cout << "Average fitness: " << acc / (populationSize - infCnt) << endl;
 			cout << "Average depth: " << depthAcc / (populationSize - infCnt) << endl;
+			cout << "Average improvement: " << accImp / this->vectorGA_populationSize;
 			cout << "Best fitness: " << maxFitness << endl;
 			cout << "Best individual: " << endl << this->population.at(bestIndividualIdx) << endl;
 		}
@@ -184,7 +190,7 @@ void GeneticProgramming::standartRun(const int & maxGenerationNum, const int & s
 				if (seed2 <= this->crossover_prob) {
 					Individual & parent1 = this->selection->selectIndividual(this->population, fitnessValues);
 					Individual & parent2 = this->selection->selectIndividual(this->population, fitnessValues);
-					newIndividual = this->crossover->createOffspring(parent1, parent2);
+					newIndividual = this->crossover->createOffspring(parent1, parent2, this->maxTreeDepth);
 				}
 				else {
 					Individual & selected = this->selection->selectIndividual(this->population, fitnessValues);
@@ -192,7 +198,7 @@ void GeneticProgramming::standartRun(const int & maxGenerationNum, const int & s
 				}
 			}
 
-			this->mutation->mutate(newIndividual);
+			this->mutation->mutate(newIndividual, this->maxTreeDepth);
 			newPopulation.push_back(newIndividual);
 			newPopulationSize++;
 		}
@@ -302,6 +308,11 @@ void GeneticProgramming::setWindowParams(bool useWindow, int windowHeight, int w
 	this->useWindow = useWindow;
 	this->windowHeight = windowHeight;
 	this->windowWidth = windowWidth;
+}
+
+void GeneticProgramming::setMaxDepth(const int& maxDepth)
+{
+	this->maxTreeDepth = maxDepth;
 }
 
 vector<double> GeneticProgramming::tuneConstants(Individual& individual, vector<double> originalConstants, shared_ptr<map<int, map<string, double>>> dbTablePtr)

@@ -59,6 +59,7 @@ private:
 	int windowHeight;
 	int windowWidth;
 	
+	int maxTreeDepth;
 
 public:
 	GeneticProgramming();
@@ -81,6 +82,7 @@ public:
 		const double & randomIndividualProb, const int & populationSize, const double & newIndividualRatio);
 	void setOutputFileParams(bool datFile, string GPdataFolderPath, string GPGAdataFolderPath);
 	void setWindowParams(bool useWindow, int windowHeight, int windowWidth);
+	void setMaxDepth(const int& maxDepth);
 
 	vector<double> tuneConstants(Individual & individual, vector<double> originalConstants, shared_ptr<map<int, map<string, double>>> dbTablePtr = nullptr);
 

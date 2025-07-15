@@ -14,9 +14,12 @@ MysqlConnection::MysqlConnection()
 
 void MysqlConnection::connectToDb(string url, string user, string password, string dbName, int port)
 {
+	cout << this->conn->status << endl;
 	conn = mysql_real_connect(this->conn, url.c_str(), user.c_str(), password.c_str(), dbName.c_str(), port, NULL, 0);
 	if (!conn) {
 		cout << "Conection failed" << endl;
+		cout << "Chyba èíslo: " << mysql_errno(this->conn) << endl;
+		cout << "Popis chyby: " << mysql_error(this->conn) << endl;
 	}
 	else {
 		cout << "Connection successfull" << endl;

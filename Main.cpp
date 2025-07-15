@@ -30,7 +30,7 @@ void tuneHyperParamatersGP() {
     ofstream file("C:/Users/petrm/Desktop/GeneticPrograming/Data/Hyperparamtuning.txt");
 
     MysqlConnection connection;
-    connection.connectToDb("localhost", "root", "krtek", "testdb", 3306);
+    connection.connectToDb("localhost", "root", "krtek", "sys", 3306);
     vector<string> colNames = connection.getColNames("testdb", "table_c");
     colNames.erase(std::remove(colNames.begin(), colNames.end(), "y"), colNames.end());
 
@@ -199,9 +199,12 @@ int main()
 
         if (choice == 1) {
             MysqlConnection connection;
-            connection.connectToDb("localhost", "root", "krtek", "testdb", 3306);
-            vector<string> colNames = connection.getColNames("testdb", "table_c");
+            connection.connectToDb("localhost", "root", "krtek", "testschema", 3306);
+            vector<string> colNames = connection.getColNames("testschema", "testdb1");
             colNames.erase(std::remove(colNames.begin(), colNames.end(), "y"), colNames.end());
+            for(auto x : colNames){
+                cout << x << endl;
+            }
 
             FunctionSet funcSet = FunctionSet::createArithmeticFunctionSet();
             TerminalSet termSet = TerminalSet(-5, 5, false, colNames);
@@ -227,8 +230,8 @@ int main()
 
             geneticProgramming.setFitness(unique_ptr<FitnessFunction>(new ClassicFitnessFunction()));
 
-            string dbName = "testdb";
-            string tableName = "table_c";
+            string dbName = "testschema";
+            string tableName = "testdb1";
             string primaryKey = "idx";
             bool saveDbToMemory = true;
             geneticProgramming.setDbThings(shared_ptr<Connection>(new MysqlConnection()), dbName, tableName, primaryKey, saveDbToMemory);
@@ -272,8 +275,8 @@ int main()
         }
         else if (choice == 2) {
             MysqlConnection connection;
-            connection.connectToDb("localhost", "root", "krtek", "testdb", 3306);
-            vector<string> colNames = connection.getColNames("testdb", "table_c");
+            connection.connectToDb("localhost", "root", "krtek", "testschema", 3306);
+            vector<string> colNames = connection.getColNames("testschema", "testdb1");
             colNames.erase(std::remove(colNames.begin(), colNames.end(), "y"), colNames.end());
 
             FunctionSet funcSet = FunctionSet::createArithmeticFunctionSet();
@@ -287,21 +290,21 @@ int main()
             geneticProgramming.setFunctionSet(funcSet);
             geneticProgramming.setTerminalSet(termSet);
 
-            double subtreeMutProb = 0.03;
-            double replaceNodeMutProb = 0.007;
+            double subtreeMutProb = 0.06;
+            double replaceNodeMutProb = 0.03;
             geneticProgramming.setMutation(unique_ptr<Mutation>(new CombinedMutation(subtreeMutProb, replaceNodeMutProb, funcSet, termSet)));
 
             int tournamentSize = 4;
             geneticProgramming.setSelection(unique_ptr<Selection>(new TournamentSelection(tournamentSize)));
 
-            double crossoverProb = 0.45;
+            double crossoverProb = 0.7;
             double leafPickProb = 0.1;
             geneticProgramming.setCrossover(unique_ptr<Crossover>(new TwoPointCrossover(leafPickProb)), crossoverProb);
 
             geneticProgramming.setFitness(unique_ptr<FitnessFunction>(new ClassicFitnessFunction()));
 
-            string dbName = "testdb";
-            string tableName = "table_c";
+            string dbName = "testschema";
+            string tableName = "testdb1";
             string primaryKey = "idx";
             bool saveDbToMemory = true;
             geneticProgramming.setDbThings(shared_ptr<Connection>(new MysqlConnection()), dbName, tableName, primaryKey, saveDbToMemory);
@@ -315,14 +318,14 @@ int main()
             int port = 3306;
             geneticProgramming.setLoginParams(url, user, password, port);
 
-            double randomIndividualProb = 0.02;
+            double randomIndividualProb = 0.04;
             geneticProgramming.setRandomIndividualProb(randomIndividualProb);
 
             bool constantTuning = true;
-            double constantTuningMaxTime = 0.6;
+            double constantTuningMaxTime = 2;
             geneticProgramming.setTuneConstants(constantTuning, constantTuningMaxTime);
 
-            double vectorGA_crossoverProb = 0.6;
+            double vectorGA_crossoverProb = 0.7;
             double vectorGA_mutationProb = 0.03;
             int vectorGA_populationSize = 50;
             int vectorGA_tournamentSize = 4;
@@ -340,6 +343,8 @@ int main()
             int windowHeight = 2;
             int windowWidth = 10;
             geneticProgramming.setWindowParams(useWindow, windowHeight, windowWidth);
+
+            geneticProgramming.setMaxDepth(5);
 
             geneticProgramming.standartRun(100, 4);
         }
