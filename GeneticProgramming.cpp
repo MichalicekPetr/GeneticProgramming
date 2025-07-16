@@ -108,8 +108,9 @@ void GeneticProgramming::standartRun(const int & maxGenerationNum, const int & s
 				}
 
 				double scoreAfter = fitness->evaluate(population.at(i), dbMapPtr, targetValues);
-				cout << "Before: " << scoreBefore << "; After: " << scoreAfter << endl;
-				accImp += min(100, -((scoreBefore + scoreAfter) / scoreBefore));
+				//cout << "Before: " << scoreBefore << "; After: " << scoreAfter << endl;
+				if (scoreAfter > scoreBefore)
+					accImp += 1;
 			}
 		}
 
@@ -162,7 +163,7 @@ void GeneticProgramming::standartRun(const int & maxGenerationNum, const int & s
 		if(debugPrints){
 			cout << "Average fitness: " << acc / (populationSize - infCnt) << endl;
 			cout << "Average depth: " << depthAcc / (populationSize - infCnt) << endl;
-			cout << "Average improvement: " << accImp / this->vectorGA_populationSize;
+			cout << "Number of improvements: " << accImp << "/" << this->population.getSize() << endl;
 			cout << "Best fitness: " << maxFitness << endl;
 			cout << "Best individual: " << endl << this->population.at(bestIndividualIdx) << endl;
 		}

@@ -322,7 +322,7 @@ int main()
             geneticProgramming.setRandomIndividualProb(randomIndividualProb);
 
             bool constantTuning = true;
-            double constantTuningMaxTime = 2;
+            double constantTuningMaxTime = 1.5;
             geneticProgramming.setTuneConstants(constantTuning, constantTuningMaxTime);
 
             double vectorGA_crossoverProb = 0.7;

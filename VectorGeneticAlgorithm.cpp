@@ -51,7 +51,7 @@ vector<double> VectorGeneticAlgorithm::run(Individual& individual, vector<double
 		double elapsedTime = chrono::duration_cast<std::chrono::milliseconds> (currentTime - beginTime).count();
 		elapsedTime /= 1000;
 		if (elapsedTime > this->maxTime) {
-			cout << "Generations: " << generationNum << endl;
+			//cout << "Generations: " << generationNum << endl;
 			break;
 		}
 
