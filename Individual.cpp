@@ -20,12 +20,12 @@ vector<Node*> Individual::createFlattenTree() const
 
 void Individual::addNodeToVectorRec(vector<Node*>& flattenTree, Node* currentNode) const
 {
-	
+
 	if (currentNode == nullptr) {
 		return;
 	}
 	flattenTree.push_back(currentNode);
-	
+
 	if (currentNode->getLeftOffspring() != nullptr) {
 		this->addNodeToVectorRec(flattenTree, currentNode->getLeftOffspring());
 	}
@@ -45,7 +45,7 @@ void Individual::getTreeInfoRec(Node* current, int& nodeCntAcc, int& maxDepth, c
 			maxDepth = depth;
 		}
 		nodeCntAcc++;
-		this->getTreeInfoRec(current->getLeftOffspring(),nodeCntAcc, maxDepth, depth + 1);
+		this->getTreeInfoRec(current->getLeftOffspring(), nodeCntAcc, maxDepth, depth + 1);
 		this->getTreeInfoRec(current->getRightOffspring(), nodeCntAcc, maxDepth, depth + 1);
 		return;
 	}
@@ -86,7 +86,7 @@ Individual& Individual::operator=(const Individual& original)
 }
 
 void Individual::freeNodesRec(Node* current)
-{	
+{
 	if (current == nullptr) {
 		return;
 	}
@@ -108,8 +108,8 @@ void Individual::fillLayersVectorRec(Node* current, const int& depth, vector<vec
 	else {
 		nodeStr = current->toString();
 	}
-	
-	if (maxSizes.at(depth) < (int)nodeStr.length()){
+
+	if (maxSizes.at(depth) < (int)nodeStr.length()) {
 		maxSizes.at(depth) = (int)nodeStr.length();
 	}
 
@@ -129,7 +129,7 @@ void Individual::fillLayersVectorRec(Node* current, const int& depth, vector<vec
 	}
 }
 
-string Individual::addSpacesToElement(const string & originalElement, int elementSize) const
+string Individual::addSpacesToElement(const string& originalElement, int elementSize) const
 {
 	string element;
 	if (originalElement.size() > elementSize) {
@@ -149,11 +149,11 @@ string Individual::addSpacesToElement(const string & originalElement, int elemen
 	return element;
 }
 
-void Individual::addBranchLines(vector<string>& lines, const int& depth, const int & elementSize, const vector<bool>& emptyIndexes) const
+void Individual::addBranchLines(vector<string>& lines, const int& depth, const int& elementSize, const vector<bool>& emptyIndexes) const
 {
-	int elementCnt = (int)pow(2, depth-1);
+	int elementCnt = (int)pow(2, depth - 1);
 	vector<bool> emptyIndexes2(0);
-	for (int i = 0; i < elementCnt; i ++) {
+	for (int i = 0; i < elementCnt; i++) {
 		bool a = emptyIndexes.at(i * 2);
 		bool b = emptyIndexes.at((i * 2) + 1);
 		if (a && b) {
@@ -166,7 +166,7 @@ void Individual::addBranchLines(vector<string>& lines, const int& depth, const i
 
 	string line1 = this->createBranchLineVertical(depth, elementSize, emptyIndexes);
 	string line2 = this->createBranchLineHorizontal(depth, elementSize, emptyIndexes);
-	string line3 = this->createBranchLineVertical(depth - 1, ((elementSize + 1) * 2) -1, emptyIndexes2);
+	string line3 = this->createBranchLineVertical(depth - 1, ((elementSize + 1) * 2) - 1, emptyIndexes2);
 
 	lines.insert(lines.begin(), line1);
 	lines.insert(lines.begin(), line2);
@@ -182,7 +182,7 @@ string Individual::createBranchLineVertical(const int& depth, const int& element
 	if (((elementSize - 1) % 2) == 1) {
 		lastPartLen += 1;
 	}
-	line.append( firstPartLen, ' ');
+	line.append(firstPartLen, ' ');
 
 	int elementCnt = (int)pow(2, depth) - 1;
 	for (int i = 0; i <= elementCnt - 1; i++) {
@@ -192,7 +192,7 @@ string Individual::createBranchLineVertical(const int& depth, const int& element
 		else {
 			line += '|';
 		}
-		line.append( elementSize, ' ');
+		line.append(elementSize, ' ');
 	}
 
 	int lastIdx = (int)(emptyIndexes.size() - 1);
@@ -202,13 +202,13 @@ string Individual::createBranchLineVertical(const int& depth, const int& element
 	else {
 		line += '|';
 	}
-	
-	line.append( lastPartLen, ' ');
-	
+
+	line.append(lastPartLen, ' ');
+
 	return line;
 }
 
-void Individual::createConstantTableRec(Node * current)
+void Individual::createConstantTableRec(Node* current)
 {
 	if (current->isTerminalNode()) {
 		TerminalNode* terminalNode = dynamic_cast<TerminalNode*>(current);
@@ -219,11 +219,11 @@ void Individual::createConstantTableRec(Node * current)
 
 	Node* left = current->getLeftOffspring();
 	Node* right = current->getRightOffspring();
-	
+
 	if (left != nullptr) {
 		this->createConstantTableRec(left);
 	}
-	
+
 	if (right != nullptr) {
 		this->createConstantTableRec(right);
 	}
@@ -237,9 +237,9 @@ string Individual::createBranchLineHorizontal(const int& depth, const int& eleme
 	int firstPartLen = (int)((elementSize - 1) / 2);
 	int lastPartLen = (int)((elementSize - 1) / 2);
 	if (((elementSize - 1) % 2) == 1) {
-		lastPartLen += 1; 
+		lastPartLen += 1;
 	}
-	line.append( firstPartLen, ' ');
+	line.append(firstPartLen, ' ');
 	int elementCnt = (int)(pow(2, depth) - 1);
 	for (int i = 0; i <= elementCnt / 2; i++) {
 		int idx1 = i * 2;
@@ -250,7 +250,7 @@ string Individual::createBranchLineHorizontal(const int& depth, const int& eleme
 		else {
 			line.append((elementSize / 2) + 1, '-');
 		}
-		 
+
 		if (emptyIndexes.at(idx2)) {
 			if ((elementSize % 2) == 1) {
 				line.append((elementSize / 2) + 2, ' ');
@@ -268,10 +268,10 @@ string Individual::createBranchLineHorizontal(const int& depth, const int& eleme
 			}
 		}
 
-		line.append( elementSize, ' ');
+		line.append(elementSize, ' ');
 	}
 
-	line.append( lastPartLen, ' ');
+	line.append(lastPartLen, ' ');
 	return line;
 }
 
@@ -332,10 +332,10 @@ Individual::~Individual()
 
 Node* Individual::pickRandomNode() const
 {
-	if (this->nodeCnt ==  0) {
+	if (this->nodeCnt == 0) {
 		return nullptr;
 	}
-	
+
 	vector<Node*> treeFlatten = this->createFlattenTree();
 	int seed = Random::randInt(0, this->nodeCnt - 1);
 	return treeFlatten.at(seed);
@@ -356,7 +356,7 @@ Node* Individual::pickRandomLeaf() const
 			break;
 		}
 	}
-	
+
 	return leaf;
 }
 
@@ -428,10 +428,10 @@ Individual Individual::generateRandomTreeGrowMethod(const int& depth, const Func
 		}
 		return Individual(root, nodeCnt, maxReachedDepth);
 	}
-	
+
 }
 
-Individual Individual::generateRandomTreeFullMethod(const int& depth, const FunctionSet & functionSet, const TerminalSet & terminalSet)
+Individual Individual::generateRandomTreeFullMethod(const int& depth, const FunctionSet& functionSet, const TerminalSet& terminalSet)
 {
 	if (depth < 1) {
 		throw invalid_argument("Depth has to be greater than 0");
@@ -441,7 +441,7 @@ Individual Individual::generateRandomTreeFullMethod(const int& depth, const Func
 	}
 	else {
 		Node* root = FunctionNode::createRandomFunctionNode(functionSet);
-		generateRandomTreeFullMethodRec(root, 2, depth,  functionSet, terminalSet);
+		generateRandomTreeFullMethodRec(root, 2, depth, functionSet, terminalSet);
 		return Individual(root, (int)(pow(depth, 2) - 1), depth);
 	}
 }
@@ -509,7 +509,7 @@ Node* Individual::generateRandomTreeFullMethodNode(const int& depth, const Funct
 	}
 }
 
-void Individual::generateRandomTreeFullMethodRec(Node * parrent, const int& depth, const int& maxDepth, const FunctionSet & functionSet, const TerminalSet & terminalSet)
+void Individual::generateRandomTreeFullMethodRec(Node* parrent, const int& depth, const int& maxDepth, const FunctionSet& functionSet, const TerminalSet& terminalSet)
 {
 	if (depth > maxDepth) {
 		return;
@@ -533,22 +533,22 @@ void Individual::generateRandomTreeFullMethodRec(Node * parrent, const int& dept
 	generateRandomTreeFullMethodRec(right, depth + 1, maxDepth, functionSet, terminalSet);
 }
 
-double Individual::evaluateTree(shared_ptr<Connection> & conn, string dbName, string tableName, const int& rowIdx) const
+double Individual::evaluateTree(shared_ptr<Connection>& conn, string dbName, string tableName, const int& rowIdx) const
 {
- 	map <string, double> rowMap = conn->getRow(dbName, tableName, rowIdx);
+	map <string, double> rowMap = conn->getRow(dbName, tableName, rowIdx);
 	this->assingValueToDataPointsRec(this->root, 1, rowMap);
 	double result;
 	if (this->root->isFunctionNode()) {
-		result = dynamic_cast<FunctionNode *>(this->root)->evaulateNodeRec();
+		result = dynamic_cast<FunctionNode*>(this->root)->evaulateNodeRec();
 	}
 	else {
 		return dynamic_cast<TerminalNode*>(this->root)->getValue();
 	}
-	
+
 	return result;
 }
 
-double Individual::evaluateTree(const map<string,double> & rowMap) const
+double Individual::evaluateTree(const map<string, double>& rowMap) const
 {
 	this->assingValueToDataPointsRec(this->root, 1, rowMap);
 	double result;
@@ -566,7 +566,7 @@ void Individual::assingValueToDataPointsRec(Node* current, const int& depth, con
 	if (depth == maxDepth) {
 		if (current->isTerminalNode()) {
 			TerminalNode* node = dynamic_cast<TerminalNode*>(current);
-			Terminal & term = node->getTerminalReference();
+			Terminal& term = node->getTerminalReference();
 			if (term.isDataPoint()) {
 				term.setValue(rowMap);
 			}
@@ -577,7 +577,7 @@ void Individual::assingValueToDataPointsRec(Node* current, const int& depth, con
 			this->assingValueToDataPointsRec(current->getLeftOffspring(), depth + 1, rowMap);
 		}
 		if (current->getRightOffspring() != nullptr) {
-			this->assingValueToDataPointsRec(current->getRightOffspring(), depth+1, rowMap);
+			this->assingValueToDataPointsRec(current->getRightOffspring(), depth + 1, rowMap);
 		}
 	}
 }
@@ -615,7 +615,7 @@ void Individual::setNodeCnt(int nodeCnt)
 std::ostream& operator<<(std::ostream& os, const Individual& individual)
 {
 	vector<vector<string>> layers(individual.maxDepth);
-	vector<int> maxSizes; 
+	vector<int> maxSizes;
 	int lineCnt = 0;
 
 	for (int i = 0; i <= individual.maxDepth; i++) {
@@ -632,7 +632,7 @@ std::ostream& operator<<(std::ostream& os, const Individual& individual)
 
 	for (int i = individual.maxDepth - 1; i >= 0; i--) {
 		vector<bool> emptyIndexes;
-		if (i == individual.maxDepth - 1){
+		if (i == individual.maxDepth - 1) {
 			elementSize = originElementSize;
 		}
 		else {
@@ -642,7 +642,7 @@ std::ostream& operator<<(std::ostream& os, const Individual& individual)
 		vector<string> elements = layers.at(i);
 		string line = "";;
 		int idx = -1;
-		
+
 		int idx11 = 0;
 		for (const auto& element : elements) {
 			if (element == "") {
