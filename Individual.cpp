@@ -11,13 +11,6 @@
 
 using namespace std;
 
-vector<Node*> Individual::createFlattenTree() const
-{
-	vector<Node*> treeFlatten(0);
-	this->addNodeToVectorRec(treeFlatten, this->root);
-	return treeFlatten;
-}
-
 void Individual::addNodeToVectorRec(vector<Node*>& flattenTree, Node* currentNode) const
 {
 
@@ -83,6 +76,49 @@ Individual& Individual::operator=(const Individual& original)
 	this->constantTable = original.constantTable;
 	this->constantTableCreated = original.constantTableCreated;
 	return *this;
+}
+
+// Pøepsáno
+bool Individual::isLeafAtIdx(const int& idx) const
+{
+	int child1idx = ((idx + 1) * 2) - 1;
+	int child2idx = child1idx + 1;
+	if ((this->lastNodeIdx + 1) < ((idx + 1) * 2))
+		return TRUE;
+	else if ((this->lastNodeIdx + 1) == ((idx + 1) * 2)) {
+		if (this->nodeVec.at(child1idx) == nullptr)
+			return TRUE;
+		else
+			return FALSE;
+	}
+	else {
+		if ((this->nodeVec.at(child1idx) == nullptr) && ((this->nodeVec.at(child2idx) == nullptr)))
+			return TRUE;
+		else
+			return FALSE;
+	}
+}
+
+bool Individual::isInnerNodeAtIdx(const int& idx) const
+{
+	return !this->isLeafAtIdx(idx);
+}
+
+
+
+// Pøepsáno
+int Individual::getParentIdx(const int& idx)
+{
+	if (idx < 0) {
+		cout << "Index nemùže být záporný" << endl;
+		exit(1);
+	}
+	else if (idx == 0) {
+		return -1;
+	}
+	else {
+		return ((idx + 1) / 2) - 1;
+	}
 }
 
 void Individual::freeNodesRec(Node* current)
@@ -275,111 +311,118 @@ string Individual::createBranchLineHorizontal(const int& depth, const int& eleme
 	return line;
 }
 
+// Pøepsané
 Individual::Individual()
 {
-	this->root = nullptr;
+	this->nodeVec = vector<unique_ptr<Node>>(0);
+	this->reserved = 0;
 	this->nodeCnt = 0;
-	this->maxDepth = 0;
+	this->depth = 0;
 	this->constantTable = ConstantTable();
 	this->constantTableCreated = false;
+	this->lastNodeIdx = -1;
 }
 
+// Pøepsané
 Individual::Individual(const Individual& original)
 {
-	if (original.getRoot() == nullptr) {
-		this->root = nullptr;
-		this->nodeCnt = 0;
-		this->maxDepth = 0;
-		this->constantTable = ConstantTable();
-		this->constantTableCreated = false;
-	}
-	else {
-		this->root = original.getRoot()->createTreeCopy();
-		int nodeCnt = 0, maxDepth = 0;
-		this->getTreeInfoRec(this->root, nodeCnt, maxDepth, 1);
-		this->nodeCnt = nodeCnt;
-		this->maxDepth = maxDepth;
-		this->constantTable = original.constantTable;
-		this->constantTableCreated = original.constantTableCreated;
+	lastNodeIdx = original.getLastNodeIdx();
+	nodeVec.reserve(lastNodeIdx);
+
+	for (int i = 0; i < lastNodeIdx; i++) {
+		const Node* originalNode = original.nodeVec.at(i).get();
+		if (originalNode) {
+			nodeVec.push_back(originalNode->clone());  
+		}
+		else {
+			nodeVec.push_back(nullptr);
+		}
 	}
 
-}
+	this->nodeCnt = original.nodeCnt;
+	this->depth = original.depth;
+	this->lastNodeIdx = lastNodeIdx - 1;
+	this->reserved = lastNodeIdx;
 
-Individual::Individual(Node* root)
-{
-	this->root = root;
-	int nodeCnt = 0, maxDepth = 0;
-	this->getTreeInfoRec(this->root, nodeCnt, maxDepth, 1);
-	this->nodeCnt = nodeCnt;
-	this->maxDepth = maxDepth;
 	this->constantTable = ConstantTable();
 	this->constantTableCreated = false;
 }
 
-Individual::Individual(Node* root, const int& nodeCnt, const int& maxDepth)
+Individual::Individual(const vector<int>& structure, const int& depth, const int& nodeCnt, const int& reserved, const int& lastNodeIdx)
 {
-	this->root = root;
 	this->nodeCnt = nodeCnt;
-	this->maxDepth = maxDepth;
+	this->depth = depth;
+	this->reserved = reserved;
+	this->lastNodeIdx = lastNodeIdx;
+
+	this->nodeVec.reserve(reserved);
+	for (int i = 0; i < lastNodeIdx; i++) {
+
+	}
+
 	this->constantTable = ConstantTable();
 	this->constantTableCreated = false;
 }
 
-Individual::~Individual()
-{
-	this->freeNodesRec(this->root);
-}
-
+// Pøepsáno
 Node* Individual::pickRandomNode() const
 {
 	if (this->nodeCnt == 0) {
 		return nullptr;
 	}
 
-	vector<Node*> treeFlatten = this->createFlattenTree();
-	int seed = Random::randInt(0, this->nodeCnt - 1);
-	return treeFlatten.at(seed);
+	Node* pick = nullptr;
+	while (pick == nullptr) {
+		int seed = Random::randInt(0, this->lastNodeIdx);
+		if (this->nodeVec.at(seed) != nullptr) {
+			pick = nodeVec.at(seed).get();
+			break;
+		}
+	}
+	return pick;
 }
 
+// Pøepsáno
 Node* Individual::pickRandomLeaf() const
 {
 	if (this->nodeCnt == 0) {
 		return nullptr;
 	}
-	vector<Node*> treeFlatten = this->createFlattenTree();
-	Node* leaf;
 
-	while (true) {
-		int seed = Random::randInt(0, this->nodeCnt - 1);
-		if (treeFlatten.at(seed)->isLeaf()) {
-			leaf = treeFlatten.at(seed);
-			break;
+	Node* pick = nullptr;
+	while (pick == nullptr) {
+		int seed = Random::randInt(0, this->lastNodeIdx);
+		if (this->nodeVec.at(seed) != nullptr) {
+			if (this->isLeafAtIdx(seed)) {
+				pick = nodeVec.at(seed).get();
+				break;
+			}
 		}
 	}
-
-	return leaf;
+	return pick;
 }
 
+// Pøepsáno
 Node* Individual::pickRandomInnerNode() const
 {
 	if (this->nodeCnt == 0) {
 		return nullptr;
 	}
 	if (this->nodeCnt == 1) {
-		// Only 1 node, its root, no inner node then
-		return this->root;
+		return nodeVec.at(0).get();
 	}
-	vector<Node*> treeFlatten = this->createFlattenTree();
-	Node* innerNode;
 
-	while (true) {
-		int seed = Random::randInt(0, this->nodeCnt - 1);
-		if (!treeFlatten.at(seed)->isLeaf()) {
-			innerNode = treeFlatten.at(seed);
-			break;
+	Node* pick = nullptr;
+	while (pick == nullptr) {
+		int seed = Random::randInt(0, this->lastNodeIdx);
+		if (this->nodeVec.at(seed) != nullptr) {
+			if (this->isInnerNodeAtIdx(seed)) {
+				pick = nodeVec.at(seed).get();
+				break;
+			}
 		}
 	}
-	return innerNode;
+	return pick;
 }
 
 Individual Individual::generateRandomTreeGrowMethod(const int& depth, const FunctionSet& functionSet, const TerminalSet& terminalSet)
@@ -387,6 +430,49 @@ Individual Individual::generateRandomTreeGrowMethod(const int& depth, const Func
 	if (depth < 1) {
 		throw invalid_argument("Depth has to be greater than 0");
 	}
+	else {
+		vector<int> idxPool;
+		idxPool.push_back(0);
+		int treeDepth = 0;
+		int lastIdx = -1;
+
+		// 0 = nullptr, 1 = innernode, 2 = leaf
+		vector<int> structure = vector<int>(0);
+		structure.reserve(pow(2, depth) - 1);
+		for (int i = 0; i < (pow(2, depth) - 1); i++)
+			structure.push_back(0);
+
+		int nodeCnt = Random::randInt(1, (size_t)(pow(2, depth) - 1));
+		int maxIdx = pow(2, depth) - 2;
+
+		for (int i = 0; i < nodeCnt; i++) {
+			int seed = Random::randInt(0, idxPool.size());
+			int idx = idxPool.at(seed);
+			idxPool.erase(idxPool.begin() + seed);
+
+			int childIdx = ((idx + 1) * 2) - 1;
+			if (childIdx <= maxIdx) {
+				idxPool.push_back(childIdx);
+				idxPool.push_back(childIdx + 1);
+			}
+
+			structure.at(idx) = 2;
+			if (idx > 0) {
+				int parentIdx = Individual::getParentIdx(idx);
+				structure.at(parentIdx) = 1;
+			}
+			if ((idx + 1) > (pow(2, treeDepth) - 1))
+				treeDepth++;
+			if (idx > lastIdx)
+				lastIdx = idx;
+		}
+
+		// Struktura je naplnìná, jde se tvoøit strom
+		return Individual(structure, treeDepth, nodeCnt, pow(2, depth) - 1, lastIdx);
+	}
+
+
+
 	else if (depth == 1) {
 		return Individual(TerminalNode::createRandomTerminalNode(terminalSet));
 	}
@@ -587,15 +673,30 @@ int Individual::getMaxDepth() const
 	return this->maxDepth;
 }
 
+// Pøepsáno
 int Individual::getNodeCnt() const
 {
 	return this->nodeCnt;
 }
 
-Node* Individual::getRoot() const
+// Pøepsáno
+int Individual::getReservedCnt() const
 {
-	return this->root;
+	return this->reserved;
 }
+
+//Pøepsáno
+int Individual::getLastNodeIdx() const
+{
+	return this->lastNodeIdx;
+}
+
+
+int Individual::calculateTakenSpace() const
+{
+	return pow(2, depth) - 1;
+}
+
 
 void Individual::setRoot(Node* newRoot)
 {

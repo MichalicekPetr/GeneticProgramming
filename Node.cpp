@@ -84,16 +84,6 @@ void Node::createParentLink(Node* parent, NodeDirection dir)
 	}
 }
 
-bool Node::isLeaf()
-{
-	if ((this->getLeftOffspring() == nullptr) && (this->getRightOffspring() == nullptr)) {
-		return true;
-	}
-	else {
-		return false;
-	}
-}
-
 Node* Node::createTreeCopy() const
 {
 	Node* copy = this->createDeepCopy();
@@ -148,29 +138,34 @@ NodeDirection Node::getDirection()
 	}
 }
 
+// Pøepsáno
 TerminalNode::TerminalNode()
 {
-	this->left = nullptr;
-	this->right = nullptr;
-	this->parent = nullptr;
 	this->type = TerminalNodeType;
 	this->terminal = Terminal(0.0);
 }
 
+// Pøepsáno
 TerminalNode::TerminalNode(Terminal& terminal)
 {
-	this->left = nullptr;
-	this->right = nullptr;
-	this->parent = nullptr;
 	this->type = TerminalNodeType;
 	this->terminal = terminal;
 }
 
+// Pøepsáno
+TerminalNode::TerminalNode(const TerminalNode& original)
+{
+	this->type = TerminalNodeType;
+	this->terminal = Terminal(original.terminal);
+}
+
+// Pøepsáno
 bool TerminalNode::isFunctionNode() const
 {
 	return false;
 }
 
+// Pøepsáno
 bool TerminalNode::isTerminalNode() const 
 {
 	return true;
@@ -220,6 +215,11 @@ bool TerminalNode::isConstant() const
 	return !this->terminal.isDataPoint();
 }
 
+unique_ptr<Node> TerminalNode::clone() const
+{
+	return make_unique<TerminalNode>(*this);
+}
+
 FunctionNode::FunctionNode()
 {
 	this->left = nullptr;
@@ -236,6 +236,13 @@ FunctionNode::FunctionNode(const Function& func)
 	this->parent = nullptr;
 	this->type = FunctionNodeType;
 	this->function = func;
+}
+
+// Pøepsáno
+FunctionNode::FunctionNode(const FunctionNode& original)
+{
+	this->type = FunctionNodeType;
+	this->function = Function(original.function);
 }
 
 bool FunctionNode::isFunctionNode() const
@@ -332,4 +339,9 @@ Node* FunctionNode::getRightOffspring()
 void FunctionNode::setFunc(Function newFunc)
 {
 	this->function = newFunc;
+}
+
+unique_ptr<Node> FunctionNode::clone() const
+{
+	return make_unique<FunctionNode>(*this);
 }

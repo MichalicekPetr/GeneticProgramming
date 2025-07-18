@@ -17,9 +17,6 @@ class Node
 {
 protected:
 	NodeType type;
-	Node* left;
-	Node* right;
-	Node* parent;
 
 	void createTreeCopyRec(Node* original, Node * parrent, NodeDirection dir) const;
 	void createTreeCopyWithReplacePointRec(Node* original, Node* parrent, NodeDirection dir, Node * replaceOriginal, Node * replacePoint) const;
@@ -37,20 +34,17 @@ public:
 	virtual string toString() const = 0;
 
 	virtual double evaulateNodeRec() const = 0;
-	bool isLeaf();
 
 	Node* createTreeCopy() const;
 	Node* createTreeCopyWithReplacePoint(Node* replaceOriginal, Node* replacePoint) const;
 	virtual Node* createDeepCopy() const = 0;
 
 	NodeDirection getDirection();
+	virtual unique_ptr<Node> clone() const = 0;
 };
 
 class FunctionNode : public Node
 {
-	using Node::left;
-	using Node::right;
-	using Node::parent;
 private:
 	Function function;
 	NodeType type;
@@ -58,6 +52,7 @@ private:
 public:
 	FunctionNode();
 	FunctionNode(const Function& func);
+	FunctionNode(const FunctionNode& original);
 
 	bool isFunctionNode() const override;
 	bool isTerminalNode() const override;
@@ -69,14 +64,12 @@ public:
 	Node* getLeftOffspring() override;
 	Node* getRightOffspring() override;
 	void setFunc(Function newFunc);
+	unique_ptr<Node> clone() const override;
 };
 
 
 class TerminalNode : public Node
 {
-	using Node::left;
-	using Node::right;
-	using Node::parent;
 private:
 	Terminal terminal;
 	NodeType type;
@@ -84,6 +77,7 @@ private:
 public:
 	TerminalNode();
 	TerminalNode(Terminal & terminal);
+	TerminalNode(const TerminalNode& original);
 
 	bool isFunctionNode() const override;
 	bool isTerminalNode() const override;
@@ -100,4 +94,5 @@ public:
 	double getValue() const;
 
 	bool isConstant() const;
+	unique_ptr<Node> clone() const override;
 };
