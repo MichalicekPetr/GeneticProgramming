@@ -267,25 +267,26 @@ string FunctionNode::toString() const
 	return this->function.getName();
 }
 
-double FunctionNode::evaulateNodeRec() const
+// Pøepsáno
+double FunctionNode::evaluateFunction(const double& left, const double& right, bool leftValid, bool rightValid)
 {
-	double right = 0.0;
-	double left = 0.0;
-	if((this->left == nullptr) && (this->right == nullptr)){
+	if (!leftValid && !rightValid)
 		return nan("0");
-	}
-	else if (this->left == nullptr && this->right != nullptr) {
+	else if (!leftValid && rightValid) {
 		if (this->function.getParity() == 1) {
-			right = this->right->evaulateNodeRec();
 			if (!isnan(right)) {
 				return this->function.evaluate(right, 0.0);
-			}	
+			}
 		}
-		return  right;	
+		if (this->function.getName() == "-")
+			return -right;
+		else if (this->function.getName() == "%")
+			return 1 / right;
+		else
+			return  right;
 	}
-	else if (this->left != nullptr && this->right == nullptr) {
+	else if (leftValid && !rightValid) {
 		if (this->function.getParity() == 1) {
-			left = this->left->evaulateNodeRec();
 			if (!isnan(left)) {
 				return this->function.evaluate(left, 0.0);
 			}
@@ -293,8 +294,6 @@ double FunctionNode::evaulateNodeRec() const
 		return left;
 	}
 	else {
-		left = this->left->evaulateNodeRec();
-		right = this->right->evaulateNodeRec();
 		if (isnan(left) && isnan(right)) {
 			return  nan("0");
 		}
@@ -314,8 +313,8 @@ double FunctionNode::evaulateNodeRec() const
 				return right;
 			}
 		}
-		else{
-			return this->function.evaluate(left , right);
+		else {
+			return this->function.evaluate(left, right);
 		}
 	}
 }

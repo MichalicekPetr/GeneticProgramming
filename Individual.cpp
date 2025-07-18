@@ -99,6 +99,7 @@ bool Individual::isLeafAtIdx(const int& idx) const
 	}
 }
 
+// Pøepsáno
 bool Individual::isInnerNodeAtIdx(const int& idx) const
 {
 	return !this->isLeafAtIdx(idx);
@@ -121,18 +122,10 @@ int Individual::getParentIdx(const int& idx)
 	}
 }
 
-void Individual::freeNodesRec(Node* current)
+// Pøepsáno
+int Individual::getLeftChildIdx(const int& idx)
 {
-	if (current == nullptr) {
-		return;
-	}
-	else {
-		Node* left = current->getLeftOffspring();
-		Node* right = current->getRightOffspring();
-		free(current);
-		freeNodesRec(left);
-		freeNodesRec(right);
-	}
+	return ((idx + 1) * 2) - 1;
 }
 
 void Individual::fillLayersVectorRec(Node* current, const int& depth, vector<vector<string>>& layers, vector<int>& maxSizes) const
@@ -348,20 +341,32 @@ Individual::Individual(const Individual& original)
 	this->constantTableCreated = false;
 }
 
-Individual::Individual(const vector<int>& structure, const int& depth, const int& nodeCnt, const int& reserved, const int& lastNodeIdx)
+// Pøepsáno
+Individual::Individual(const vector<int>& structure, const int& depth, const int& nodeCnt, const int& reserved, const int& lastNodeIdx, const FunctionSet& functionSet, const TerminalSet& terminalSet)
 {
 	this->nodeCnt = nodeCnt;
 	this->depth = depth;
 	this->reserved = reserved;
 	this->lastNodeIdx = lastNodeIdx;
 
-	this->nodeVec.reserve(reserved);
-	for (int i = 0; i < lastNodeIdx; i++) {
+	nodeVec.reserve(reserved);
 
+	for (int i = 0; i <= lastNodeIdx; i++) {
+		int nodeTypeIdx = structure.at(i);
+		if (nodeTypeIdx == 0) {
+			nodeVec.push_back(nullptr);
+		}
+		else if (nodeTypeIdx == 1) {
+			nodeVec.push_back(std::unique_ptr<Node>(FunctionNode::createRandomFunctionNode(functionSet)));
+		}
+		else if (nodeTypeIdx == 2) {
+			nodeVec.push_back(std::unique_ptr<Node>(TerminalNode::createRandomTerminalNode(terminalSet)));
+		}
+		else {
+			std::cerr << "Nesprávná hodnota ve struktuøe na indexu " << i << "!" << std::endl;
+			throw std::runtime_error("Chyba ve struktuøe stromu");
+		}
 	}
-
-	this->constantTable = ConstantTable();
-	this->constantTableCreated = false;
 }
 
 // Pøepsáno
@@ -425,6 +430,7 @@ Node* Individual::pickRandomInnerNode() const
 	return pick;
 }
 
+// Pøepsáno
 Individual Individual::generateRandomTreeGrowMethod(const int& depth, const FunctionSet& functionSet, const TerminalSet& terminalSet)
 {
 	if (depth < 1) {
@@ -446,7 +452,7 @@ Individual Individual::generateRandomTreeGrowMethod(const int& depth, const Func
 		int maxIdx = pow(2, depth) - 2;
 
 		for (int i = 0; i < nodeCnt; i++) {
-			int seed = Random::randInt(0, idxPool.size());
+			int seed = Random::randInt(0, idxPool.size() - 1);
 			int idx = idxPool.at(seed);
 			idxPool.erase(idxPool.begin() + seed);
 
@@ -468,209 +474,118 @@ Individual Individual::generateRandomTreeGrowMethod(const int& depth, const Func
 		}
 
 		// Struktura je naplnìná, jde se tvoøit strom
-		return Individual(structure, treeDepth, nodeCnt, pow(2, depth) - 1, lastIdx);
+		return Individual(structure, treeDepth, nodeCnt, pow(2, depth) - 1, lastIdx, functionSet, terminalSet);
 	}
-
-
-
-	else if (depth == 1) {
-		return Individual(TerminalNode::createRandomTerminalNode(terminalSet));
-	}
-	else {
-		vector <Node*> nodeVec;
-		vector <NodeDirection> dirVec;
-		vector <int> depthVec;
-
-		Node* root = FunctionNode::createRandomFunctionNode(functionSet);
-
-		nodeVec.push_back(root); dirVec.push_back(NodeDirection::Left); depthVec.push_back(2);
-		nodeVec.push_back(root); dirVec.push_back(NodeDirection::Right); depthVec.push_back(2);
-		int nodeCnt = Random::randInt(depth, (size_t)(pow(2, depth) - 2));
-		int maxReachedDepth = 1;
-
-		for (int i = 0; i < nodeCnt; i++) {
-			int seed = Random::randInt(0, nodeVec.size() - 1);
-			Node* current = nodeVec.at(seed);
-			NodeDirection dir = dirVec.at(seed);
-			int currentDepth = depthVec.at(seed);
-			if (currentDepth > maxReachedDepth) {
-				maxReachedDepth = currentDepth;
-			}
-
-			nodeVec.erase(nodeVec.begin() + seed);
-			dirVec.erase(dirVec.begin() + seed);
-			depthVec.erase(depthVec.begin() + seed);
-
-			Node* newNode;
-			if (currentDepth < depth) {
-				newNode = FunctionNode::createRandomFunctionNode(functionSet);
-				nodeVec.push_back(newNode); dirVec.push_back(NodeDirection::Left); depthVec.push_back(currentDepth + 1);
-				nodeVec.push_back(newNode); dirVec.push_back(NodeDirection::Right); depthVec.push_back(currentDepth + 1);
-			}
-			else {
-				newNode = TerminalNode::createRandomTerminalNode(terminalSet);
-			}
-			newNode->createParentLink(current, dir);
-		}
-		return Individual(root, nodeCnt, maxReachedDepth);
-	}
-
 }
 
+// Pøepsáno
 Individual Individual::generateRandomTreeFullMethod(const int& depth, const FunctionSet& functionSet, const TerminalSet& terminalSet)
 {
 	if (depth < 1) {
 		throw invalid_argument("Depth has to be greater than 0");
-	}
-	else if (depth == 1) {
-		return Individual(TerminalNode::createRandomTerminalNode(terminalSet));
+		exit(1);
 	}
 	else {
-		Node* root = FunctionNode::createRandomFunctionNode(functionSet);
-		generateRandomTreeFullMethodRec(root, 2, depth, functionSet, terminalSet);
-		return Individual(root, (int)(pow(depth, 2) - 1), depth);
-	}
-}
+		int nodeCnt = pow(2, depth) - 1;
+		int lastLayerIdx = pow(2, depth - 1) - 1;
+		int lastIdx = nodeCnt - 1;
 
-Node* Individual::generateRandomTreeGrowMethodNode(const int& depth, const FunctionSet& functionSet, const TerminalSet& terminalSet)
-{
-	if (depth < 1) {
-		throw invalid_argument("Depth has to be greater than 0");
-	}
-	else if (depth == 1) {
-		return TerminalNode::createRandomTerminalNode(terminalSet);
-	}
-	else {
-		vector <Node*> nodeVec;
-		vector <NodeDirection> dirVec;
-		vector <int> depthVec;
-
-		Node* root = FunctionNode::createRandomFunctionNode(functionSet);
-
-		nodeVec.push_back(root); dirVec.push_back(NodeDirection::Left); depthVec.push_back(2);
-		nodeVec.push_back(root); dirVec.push_back(NodeDirection::Right); depthVec.push_back(2);
-		int nodeCnt = Random::randInt(depth, (size_t)(pow(2, depth) - 2));
-		int maxReachedDepth = 1;
-
-		for (int i = 0; i < nodeCnt; i++) {
-			int seed = Random::randInt(0, nodeVec.size() - 1);
-			Node* current = nodeVec.at(seed);
-			NodeDirection dir = dirVec.at(seed);
-			int currentDepth = depthVec.at(seed);
-			if (currentDepth > maxReachedDepth) {
-				maxReachedDepth = currentDepth;
-			}
-
-			nodeVec.erase(nodeVec.begin() + seed);
-			dirVec.erase(dirVec.begin() + seed);
-			depthVec.erase(depthVec.begin() + seed);
-
-			Node* newNode;
-			if (currentDepth < depth) {
-				newNode = FunctionNode::createRandomFunctionNode(functionSet);
-				nodeVec.push_back(newNode); dirVec.push_back(NodeDirection::Left); depthVec.push_back(currentDepth + 1);
-				nodeVec.push_back(newNode); dirVec.push_back(NodeDirection::Right); depthVec.push_back(currentDepth + 1);
-			}
-			else {
-				newNode = TerminalNode::createRandomTerminalNode(terminalSet);
-			}
-			newNode->createParentLink(current, dir);
+		vector<int> structure = vector<int>(0);
+		structure.reserve(pow(2, depth) - 1);
+		for (int i = 0; i < lastLayerIdx; i++) {
+			structure.push_back(1);
 		}
-		return root;
+		for (int i = lastLayerIdx; i < nodeCnt; i++) {
+			structure.push_back(2);
+		}
+
+		return Individual(structure, depth, nodeCnt, nodeCnt, lastIdx, functionSet, terminalSet);
 	}
 }
 
-Node* Individual::generateRandomTreeFullMethodNode(const int& depth, const FunctionSet& functionSet, const TerminalSet& terminalSet)
-{
-	if (depth < 1) {
-		throw invalid_argument("Depth has to be greater than 0");
-	}
-	else if (depth == 1) {
-		return TerminalNode::createRandomTerminalNode(terminalSet);
-	}
-	else {
-		Node* root = FunctionNode::createRandomFunctionNode(functionSet);
-		generateRandomTreeFullMethodRec(root, 2, depth, functionSet, terminalSet);
-		return root;
-	}
-}
-
-void Individual::generateRandomTreeFullMethodRec(Node* parrent, const int& depth, const int& maxDepth, const FunctionSet& functionSet, const TerminalSet& terminalSet)
-{
-	if (depth > maxDepth) {
-		return;
-	}
-	Node* left, * right;
-	if (depth == maxDepth) {
-		left = TerminalNode::createRandomTerminalNode(terminalSet);
-		right = TerminalNode::createRandomTerminalNode(terminalSet);
-	}
-	else {
-		left = FunctionNode::createRandomFunctionNode(functionSet);
-		right = FunctionNode::createRandomFunctionNode(functionSet);
-	}
-
-	left->createParentLink(parrent, NodeDirection::Left);
-	right->createParentLink(parrent, NodeDirection::Right);
-
-
-
-	generateRandomTreeFullMethodRec(left, depth + 1, maxDepth, functionSet, terminalSet);
-	generateRandomTreeFullMethodRec(right, depth + 1, maxDepth, functionSet, terminalSet);
-}
-
-double Individual::evaluateTree(shared_ptr<Connection>& conn, string dbName, string tableName, const int& rowIdx) const
+// Pøepsáno
+double Individual::evaluate(shared_ptr<Connection>& conn, string dbName, string tableName, const int& rowIdx) const
 {
 	map <string, double> rowMap = conn->getRow(dbName, tableName, rowIdx);
-	this->assingValueToDataPointsRec(this->root, 1, rowMap);
-	double result;
-	if (this->root->isFunctionNode()) {
-		result = dynamic_cast<FunctionNode*>(this->root)->evaulateNodeRec();
-	}
-	else {
-		return dynamic_cast<TerminalNode*>(this->root)->getValue();
-	}
-
-	return result;
+	return this->evaluate(rowMap);
 }
 
-double Individual::evaluateTree(const map<string, double>& rowMap) const
+// Pøepsáno
+double Individual::evaluate(const map<string, double>& rowMap) const
 {
-	this->assingValueToDataPointsRec(this->root, 1, rowMap);
-	double result;
-	if (this->root->isFunctionNode()) {
-		result = dynamic_cast<FunctionNode*>(this->root)->evaulateNodeRec();
-	}
-	else {
-		return dynamic_cast<TerminalNode*>(this->root)->getValue();
-	}
-	return result;
+	this->assignValueToDataPoints(rowMap);
+	return this->evaluateRec(0);
+	 
 }
 
-void Individual::assingValueToDataPointsRec(Node* current, const int& depth, const map<string, double>& rowMap) const
+// Pøepsáno
+double Individual::evaluateRec(const int& idx) const
 {
-	if (depth == maxDepth) {
+	Node* current = this->nodeVec.at(idx).get();
+	if (current->isTerminalNode()) {
+		TerminalNode* node = dynamic_cast<TerminalNode*>(current);
+		return node->getValue();
+	}
+
+	FunctionNode* node = dynamic_cast<FunctionNode*>(current);
+	int leftChildIdx = Individual::getLeftChildIdx(idx);
+	int rightChildIdx = Individual::getLeftChildIdx(idx) + 1;
+	bool hasRightChild = TRUE; bool hasLeftChild = TRUE;
+
+	if (leftChildIdx > this->lastNodeIdx)
+		hasLeftChild = FALSE;
+	else {
+		if (this->nodeVec.at(leftChildIdx) == nullptr)
+			hasLeftChild = FALSE;
+	}
+	if (rightChildIdx > this->lastNodeIdx)
+		hasRightChild = FALSE;
+	else {
+		if (this->nodeVec.at(rightChildIdx) == nullptr)
+			hasRightChild = FALSE;
+	}
+
+	if (!hasLeftChild && !hasRightChild)
+		return nan("0");
+	else if (!hasLeftChild && hasRightChild) {
+		double right = evaluateRec(rightChildIdx);
+		return node->evaluateFunction(0.0, right, false, true);
+	}
+	else if (hasLeftChild && !hasRightChild) {
+		double left = evaluateRec(leftChildIdx);
+		return node->evaluateFunction(left, 0.0, true, false);
+	}
+	else {
+		double left = evaluateRec(leftChildIdx);
+		double right = evaluateRec(rightChildIdx);
+		return node->evaluateFunction(left, right, true, true);
+	}
+}
+
+// Pøepsáno
+void Individual::assignValueToDataPoints(const std::map<std::string, double>& rowMap) const
+{
+	for (int i = 0; i <= lastNodeIdx; i++) {
+		if (!nodeVec.at(i)) continue;
+
+		Node* current = nodeVec.at(i).get();
 		if (current->isTerminalNode()) {
-			TerminalNode* node = dynamic_cast<TerminalNode*>(current);
-			Terminal& term = node->getTerminalReference();
-			if (term.isDataPoint()) {
-				term.setValue(rowMap);
+			if (TerminalNode* node = dynamic_cast<TerminalNode*>(current)) {
+				Terminal& term = node->getTerminalReference();
+				if (term.isDataPoint()) {
+					term.setValue(rowMap);
+				}
 			}
 		}
 	}
-	else {
-		if (current->getLeftOffspring() != nullptr) {
-			this->assingValueToDataPointsRec(current->getLeftOffspring(), depth + 1, rowMap);
-		}
-		if (current->getRightOffspring() != nullptr) {
-			this->assingValueToDataPointsRec(current->getRightOffspring(), depth + 1, rowMap);
-		}
-	}
 }
 
+
+
+// Pøepsáno
 int Individual::getMaxDepth() const
 {
-	return this->maxDepth;
+	return this->depth;
 }
 
 // Pøepsáno

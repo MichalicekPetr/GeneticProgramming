@@ -56,10 +56,10 @@ public:
 
 	bool isFunctionNode() const override;
 	bool isTerminalNode() const override;
-	int getParity();
 	static Node* createRandomFunctionNode(const FunctionSet& functionSet);
 	string toString() const override;
 	double evaulateNodeRec() const override;
+	double evaluateFunction(const double& left, const double& right, bool leftValid, bool rightValid);
 	Node* createDeepCopy() const override;
 	Node* getLeftOffspring() override;
 	Node* getRightOffspring() override;

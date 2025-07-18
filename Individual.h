@@ -32,6 +32,7 @@ private:
 public:
 	Individual();
 	Individual(const Individual& original);
+	Individual(const vector<int>& structure, const int& depth, const int& nodeCnt, const int& reserved, const int& lastNodeIdx, const FunctionSet& functionSet, const TerminalSet& terminalSet);
 
 	Node* pickRandomNode() const;
 	Node* pickRandomLeaf() const;
@@ -39,16 +40,14 @@ public:
 
 	static Individual generateRandomTreeGrowMethod(const int& depth, const FunctionSet& functionSet, const TerminalSet& terminalSet);
 	static Individual generateRandomTreeFullMethod(const int& depth, const FunctionSet& functionSet, const TerminalSet& terminalSet);
-
-	static Node* generateRandomTreeGrowMethodNode(const int& depth, const FunctionSet& functionSet, const TerminalSet& terminalSet);
-	static Node* generateRandomTreeFullMethodNode(const int& depth, const FunctionSet& functionSet, const TerminalSet& terminalSet);
-
-	static void generateRandomTreeFullMethodRec(Node* parrent, const int& depth, const int& maxDepth, const FunctionSet& functionSet, const TerminalSet& terminalSet);
 	static int getParentIdx(const int& idx);
+	static int getLeftChildIdx(const int& idx);
 
-	double evaluateTree(shared_ptr<Connection>& conn, string dbName, string tableName, const int& rowIdx) const;
-	double evaluateTree(const map<string, double>& rowMap) const;
-	void assingValueToDataPointsRec(Node* current, const int& depth, const map<string, double>& rowMap) const;
+	double evaluate(shared_ptr<Connection>& conn, string dbName, string tableName, const int& rowIdx) const;
+	double evaluate(const map<string, double>& rowMap) const;
+	double evaluateRec(const int& idx) const;
+	void assignValueToDataPoints(const map<string, double>& rowMap) const;
+
 
 	friend std::ostream& operator<<(std::ostream& os, const Individual& individual);
 
@@ -64,7 +63,6 @@ public:
 	void setDepth(int depth);
 	void setNodeCnt(int nodeCnt);
 
-	void freeNodesRec(Node* current);
 	void getTreeInfoRec(Node* current, int& nodeCntAcc, int& maxDepth, const int& depth);
 
 	void createConstantTable();
