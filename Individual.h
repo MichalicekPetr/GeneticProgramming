@@ -19,15 +19,11 @@ private:
 	ConstantTable constantTable;
 	bool constantTableCreated;
 
-	void addNodeToVectorRec(vector<Node*>& flattenTree, Node* currentNode) const;
-
-	void fillLayersVectorRec(Node* current, const int& depth, vector<vector<string>>& layers, vector<int>& maxSizes) const;
+	void fillLayersVector(vector<vector<string>>& layers, vector<int>& maxSizes) const;
 	string addSpacesToElement(const string& originalElement, int elementSize) const;
 	void addBranchLines(vector<string>& lines, const int& depth, const int& elementSize, const vector<bool>& emptyIndexes) const;
 	string createBranchLineHorizontal(const int& depth, const int& elementSize, const vector<bool>& emptyIndexes) const;
 	string createBranchLineVertical(const int& depth, const int& elementSize, const vector<bool>& emptyIndexes) const;
-
-	void createConstantTableRec(Node* current);
 
 public:
 	Individual();
@@ -48,22 +44,15 @@ public:
 	double evaluateRec(const int& idx) const;
 	void assignValueToDataPoints(const map<string, double>& rowMap) const;
 
-
 	friend std::ostream& operator<<(std::ostream& os, const Individual& individual);
 
 	int getMaxDepth() const;
 	int getNodeCnt() const;
 	int getReservedCnt() const;
 	int getLastNodeIdx() const;
-
-	int calculateTakenSpace() const;
 	
-
-	void setRoot(Node* newRoot);
 	void setDepth(int depth);
 	void setNodeCnt(int nodeCnt);
-
-	void getTreeInfoRec(Node* current, int& nodeCntAcc, int& maxDepth, const int& depth);
 
 	void createConstantTable();
 	ConstantTable& getConstantTableRef();

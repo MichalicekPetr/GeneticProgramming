@@ -33,8 +33,6 @@ public:
 
 	virtual string toString() const = 0;
 
-	virtual double evaulateNodeRec() const = 0;
-
 	Node* createTreeCopy() const;
 	Node* createTreeCopyWithReplacePoint(Node* replaceOriginal, Node* replacePoint) const;
 	virtual Node* createDeepCopy() const = 0;
@@ -58,7 +56,6 @@ public:
 	bool isTerminalNode() const override;
 	static Node* createRandomFunctionNode(const FunctionSet& functionSet);
 	string toString() const override;
-	double evaulateNodeRec() const override;
 	double evaluateFunction(const double& left, const double& right, bool leftValid, bool rightValid);
 	Node* createDeepCopy() const override;
 	Node* getLeftOffspring() override;
@@ -88,7 +85,6 @@ public:
 	string toString() const override;
 	
 	Terminal & getTerminalReference();
-	double evaulateNodeRec() const override;
 	Node* createDeepCopy() const override;
 
 	double getValue() const;

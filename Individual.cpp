@@ -1,4 +1,4 @@
-#include <vector>
+﻿#include <vector>
 #include <stdexcept>
 #include <math.h>
 #include <tuple>
@@ -11,74 +11,121 @@
 
 using namespace std;
 
-void Individual::addNodeToVectorRec(vector<Node*>& flattenTree, Node* currentNode) const
+// Přepsáno
+void Individual::fillLayersVector(vector<vector<string>>& layers, vector<int>& maxSizes) const
 {
+	Node* current;
+	int currentDepth = 1;
+	int remaining = 1;
+	bool newDepth = true;
+	for (int i = 0; i < this->lastNodeIdx; i++) {
+		newDepth = false;
+		if (this->nodeVec.at(i) == nullptr)
+			current = nullptr;
+		else
+			current = this->nodeVec.at(i).get();
 
-	if (currentNode == nullptr) {
-		return;
-	}
-	flattenTree.push_back(currentNode);
-
-	if (currentNode->getLeftOffspring() != nullptr) {
-		this->addNodeToVectorRec(flattenTree, currentNode->getLeftOffspring());
-	}
-
-	if (currentNode->getRightOffspring() != nullptr) {
-		this->addNodeToVectorRec(flattenTree, currentNode->getRightOffspring());
-	}
-}
-
-void Individual::getTreeInfoRec(Node* current, int& nodeCntAcc, int& maxDepth, const int& depth)
-{
-	if (current == nullptr) {
-		return;
-	}
-	else {
-		if (depth > maxDepth) {
-			maxDepth = depth;
+		string nodeStr;
+		if (current == nullptr) {
+			nodeStr = "";
 		}
-		nodeCntAcc++;
-		this->getTreeInfoRec(current->getLeftOffspring(), nodeCntAcc, maxDepth, depth + 1);
-		this->getTreeInfoRec(current->getRightOffspring(), nodeCntAcc, maxDepth, depth + 1);
-		return;
+		else {
+			nodeStr = current->toString();
+		}
+
+		if (maxSizes.at(currentDepth - 1) < (int)nodeStr.length()) {
+			maxSizes.at(currentDepth - 1) = (int)nodeStr.length();
+		}
+		layers.at(currentDepth - 1).push_back(nodeStr);
+
+		remaining --;
+		if (remaining == 0) {
+			currentDepth++;
+			remaining = pow(2, currentDepth - 1);
+			newDepth = true;
+		}
+	}
+	
+	if (!newDepth) {
+		for (int i = 0; i < remaining; i++) {
+			layers.at(currentDepth - 1).push_back("");
+		}
 	}
 }
 
+// Přepsáno
 void Individual::createConstantTable()
 {
 	this->constantTable.reset();
-	this->createConstantTableRec(this->root);
+
+	for (int i = 0; i < this->lastNodeIdx; i++) {
+		if (this->nodeVec.at(i) != nullptr) {
+			Node* current = this->nodeVec.at(i).get();
+			TerminalNode* terminalNode = dynamic_cast<TerminalNode*>(current);
+			if (terminalNode->isConstant()) {
+				terminalNode->getTerminalReference().setConstantLink(this->constantTable);
+			}
+		}
+	}
+
+	this->constantTableCreated = true;
 }
 
+// Přepsáno
 ConstantTable& Individual::getConstantTableRef()
 {
 	return this->constantTable;
 }
 
+// Přepsáno 
 bool Individual::hasConstantTable() const
 {
 	return this->constantTableCreated;
 }
 
+// Přepsáno
 void Individual::resetConstantTable()
 {
 	this->constantTable = ConstantTable();
 	this->constantTableCreated = false;
 }
 
+// Přepsáno
 Individual& Individual::operator=(const Individual& original)
 {
-	this->root = original.getRoot()->createTreeCopy();
-	int nodeCnt = 0, maxDepth = 0;
-	this->getTreeInfoRec(this->root, nodeCnt, maxDepth, 1);
-	this->nodeCnt = nodeCnt;
-	this->maxDepth = maxDepth;
-	this->constantTable = original.constantTable;
-	this->constantTableCreated = original.constantTableCreated;
+	// 1. Ochrana proti samopřiřazení (kopírování sebe sama)
+	if (this == &original) return *this;
+
+	// 2. Vyčištění stávajícího obsahu
+	nodeVec.clear();
+
+	// 3. Zkopírování uzlů (deep copy přes clone)
+	lastNodeIdx = original.getLastNodeIdx();
+	nodeVec.reserve(lastNodeIdx);
+
+	for (int i = 0; i < lastNodeIdx; i++) {
+		const Node* originalNode = original.nodeVec.at(i).get();
+		if (originalNode) {
+			nodeVec.push_back(originalNode->clone());  // clone() → unique_ptr<Node>
+		}
+		else {
+			nodeVec.push_back(nullptr);
+		}
+	}
+
+	// 4. Zkopírování ostatních atributů
+	nodeCnt = original.nodeCnt;
+	depth = original.depth;
+	reserved = lastNodeIdx;
+	this->lastNodeIdx = lastNodeIdx - 1;
+
+	constantTable = ConstantTable();   // nebo original.constantTable pokud je to žádané
+	constantTableCreated = false;
+
 	return *this;
 }
 
-// P�eps�no
+// Přepsáno
 bool Individual::isLeafAtIdx(const int& idx) const
 {
 	int child1idx = ((idx + 1) * 2) - 1;
@@ -99,7 +146,7 @@ bool Individual::isLeafAtIdx(const int& idx) const
 	}
 }
 
-// P�eps�no
+// Přepsáno
 bool Individual::isInnerNodeAtIdx(const int& idx) const
 {
 	return !this->isLeafAtIdx(idx);
@@ -107,11 +154,11 @@ bool Individual::isInnerNodeAtIdx(const int& idx) const
 
 
 
-// P�eps�no
+// Přepsáno
 int Individual::getParentIdx(const int& idx)
 {
 	if (idx < 0) {
-		cout << "Index nem��e b�t z�porn�" << endl;
+		cout << "Index nemůže být záporný" << endl;
 		exit(1);
 	}
 	else if (idx == 0) {
@@ -122,42 +169,13 @@ int Individual::getParentIdx(const int& idx)
 	}
 }
 
-// P�eps�no
+// Přepsáno
 int Individual::getLeftChildIdx(const int& idx)
 {
 	return ((idx + 1) * 2) - 1;
 }
 
-void Individual::fillLayersVectorRec(Node* current, const int& depth, vector<vector<string>>& layers, vector<int>& maxSizes) const
-{
-	string nodeStr;
-	if (current == nullptr) {
-		nodeStr = "";
-	}
-	else {
-		nodeStr = current->toString();
-	}
-
-	if (maxSizes.at(depth) < (int)nodeStr.length()) {
-		maxSizes.at(depth) = (int)nodeStr.length();
-	}
-
-	layers.at(depth).push_back(nodeStr);
-	if (depth == this->maxDepth) {
-		return;
-	}
-	else {
-		if (current == nullptr) {
-			this->fillLayersVectorRec(nullptr, depth + 1, layers, maxSizes);
-			this->fillLayersVectorRec(nullptr, depth + 1, layers, maxSizes);
-		}
-		else {
-			this->fillLayersVectorRec(current->getLeftOffspring(), depth + 1, layers, maxSizes);
-			this->fillLayersVectorRec(current->getRightOffspring(), depth + 1, layers, maxSizes);
-		}
-	}
-}
-
+// Přepsáno
 string Individual::addSpacesToElement(const string& originalElement, int elementSize) const
 {
 	string element;
@@ -178,6 +196,7 @@ string Individual::addSpacesToElement(const string& originalElement, int element
 	return element;
 }
 
+// Přepsáno
 void Individual::addBranchLines(vector<string>& lines, const int& depth, const int& elementSize, const vector<bool>& emptyIndexes) const
 {
 	int elementCnt = (int)pow(2, depth - 1);
@@ -203,6 +222,7 @@ void Individual::addBranchLines(vector<string>& lines, const int& depth, const i
 
 }
 
+// Přepsáno
 string Individual::createBranchLineVertical(const int& depth, const int& elementSize, const vector<bool>& emptyIndexes) const
 {
 	string line = "";
@@ -237,29 +257,7 @@ string Individual::createBranchLineVertical(const int& depth, const int& element
 	return line;
 }
 
-void Individual::createConstantTableRec(Node* current)
-{
-	if (current->isTerminalNode()) {
-		TerminalNode* terminalNode = dynamic_cast<TerminalNode*>(current);
-		if (terminalNode->isConstant()) {
-			terminalNode->getTerminalReference().setConstantLink(this->constantTable);
-		}
-	}
-
-	Node* left = current->getLeftOffspring();
-	Node* right = current->getRightOffspring();
-
-	if (left != nullptr) {
-		this->createConstantTableRec(left);
-	}
-
-	if (right != nullptr) {
-		this->createConstantTableRec(right);
-	}
-
-	return;
-}
-
+// Přepsáno
 string Individual::createBranchLineHorizontal(const int& depth, const int& elementSize, const vector<bool>& emptyIndexes) const
 {
 	string line = "";
@@ -304,7 +302,7 @@ string Individual::createBranchLineHorizontal(const int& depth, const int& eleme
 	return line;
 }
 
-// P�epsan�
+// Přepsané
 Individual::Individual()
 {
 	this->nodeVec = vector<unique_ptr<Node>>(0);
@@ -316,7 +314,7 @@ Individual::Individual()
 	this->lastNodeIdx = -1;
 }
 
-// P�epsan�
+// Přepsané
 Individual::Individual(const Individual& original)
 {
 	lastNodeIdx = original.getLastNodeIdx();
@@ -341,7 +339,7 @@ Individual::Individual(const Individual& original)
 	this->constantTableCreated = false;
 }
 
-// P�eps�no
+// Přepsáno
 Individual::Individual(const vector<int>& structure, const int& depth, const int& nodeCnt, const int& reserved, const int& lastNodeIdx, const FunctionSet& functionSet, const TerminalSet& terminalSet)
 {
 	this->nodeCnt = nodeCnt;
@@ -363,13 +361,13 @@ Individual::Individual(const vector<int>& structure, const int& depth, const int
 			nodeVec.push_back(std::unique_ptr<Node>(TerminalNode::createRandomTerminalNode(terminalSet)));
 		}
 		else {
-			std::cerr << "Nespr�vn� hodnota ve struktu�e na indexu " << i << "!" << std::endl;
-			throw std::runtime_error("Chyba ve struktu�e stromu");
+			std::cerr << "Nesprávná hodnota ve struktuře na indexu " << i << "!" << std::endl;
+			throw std::runtime_error("Chyba ve struktuře stromu");
 		}
 	}
 }
 
-// P�eps�no
+// Přepsáno
 Node* Individual::pickRandomNode() const
 {
 	if (this->nodeCnt == 0) {
@@ -387,7 +385,7 @@ Node* Individual::pickRandomNode() const
 	return pick;
 }
 
-// P�eps�no
+// Přepsáno
 Node* Individual::pickRandomLeaf() const
 {
 	if (this->nodeCnt == 0) {
@@ -407,7 +405,7 @@ Node* Individual::pickRandomLeaf() const
 	return pick;
 }
 
-// P�eps�no
+// Přepsáno
 Node* Individual::pickRandomInnerNode() const
 {
 	if (this->nodeCnt == 0) {
@@ -430,7 +428,7 @@ Node* Individual::pickRandomInnerNode() const
 	return pick;
 }
 
-// P�eps�no
+// Přepsáno
 Individual Individual::generateRandomTreeGrowMethod(const int& depth, const FunctionSet& functionSet, const TerminalSet& terminalSet)
 {
 	if (depth < 1) {
@@ -473,12 +471,12 @@ Individual Individual::generateRandomTreeGrowMethod(const int& depth, const Func
 				lastIdx = idx;
 		}
 
-		// Struktura je napln�n�, jde se tvo�it strom
+		// Struktura je naplněná, jde se tvořit strom
 		return Individual(structure, treeDepth, nodeCnt, pow(2, depth) - 1, lastIdx, functionSet, terminalSet);
 	}
 }
 
-// P�eps�no
+// Přepsáno
 Individual Individual::generateRandomTreeFullMethod(const int& depth, const FunctionSet& functionSet, const TerminalSet& terminalSet)
 {
 	if (depth < 1) {
@@ -503,14 +501,14 @@ Individual Individual::generateRandomTreeFullMethod(const int& depth, const Func
 	}
 }
 
-// P�eps�no
+// Přepsáno
 double Individual::evaluate(shared_ptr<Connection>& conn, string dbName, string tableName, const int& rowIdx) const
 {
 	map <string, double> rowMap = conn->getRow(dbName, tableName, rowIdx);
 	return this->evaluate(rowMap);
 }
 
-// P�eps�no
+// Přepsáno
 double Individual::evaluate(const map<string, double>& rowMap) const
 {
 	this->assignValueToDataPoints(rowMap);
@@ -518,7 +516,7 @@ double Individual::evaluate(const map<string, double>& rowMap) const
 	 
 }
 
-// P�eps�no
+// Přepsáno
 double Individual::evaluateRec(const int& idx) const
 {
 	Node* current = this->nodeVec.at(idx).get();
@@ -562,7 +560,7 @@ double Individual::evaluateRec(const int& idx) const
 	}
 }
 
-// P�eps�no
+// Přepsáno
 void Individual::assignValueToDataPoints(const std::map<std::string, double>& rowMap) const
 {
 	for (int i = 0; i <= lastNodeIdx; i++) {
@@ -582,73 +580,69 @@ void Individual::assignValueToDataPoints(const std::map<std::string, double>& ro
 
 
 
-// P�eps�no
+// Přepsáno
 int Individual::getMaxDepth() const
 {
 	return this->depth;
 }
 
-// P�eps�no
+// Přepsáno
 int Individual::getNodeCnt() const
 {
 	return this->nodeCnt;
 }
 
-// P�eps�no
+// Přepsáno
 int Individual::getReservedCnt() const
 {
 	return this->reserved;
 }
 
-//P�eps�no
+//Přepsáno
 int Individual::getLastNodeIdx() const
 {
 	return this->lastNodeIdx;
 }
 
-
-int Individual::calculateTakenSpace() const
-{
-	return pow(2, depth) - 1;
-}
-
-
-void Individual::setRoot(Node* newRoot)
-{
-	this->root = newRoot;
-}
-
+// Přepsáno
 void Individual::setDepth(int depth)
 {
-	this->maxDepth = depth;
+	this->depth = depth;
 }
 
+// Přepsáno
 void Individual::setNodeCnt(int nodeCnt)
 {
 	this->nodeCnt = nodeCnt;
 }
 
+// Přepsáno
 std::ostream& operator<<(std::ostream& os, const Individual& individual)
 {
-	vector<vector<string>> layers(individual.maxDepth);
+	if (individual.nodeCnt == 0) {
+		os << "Empty tree" << endl;
+		return os;
+	}
+
+	vector<vector<string>> layers(individual.depth);
 	vector<int> maxSizes;
 	int lineCnt = 0;
 
-	for (int i = 0; i <= individual.maxDepth; i++) {
+	for (int i = 0; i <= individual.depth; i++) {
 		layers.push_back(vector<string>(0));
 		maxSizes.push_back(-1);
 	}
 
-	individual.fillLayersVectorRec(individual.root, 0, layers, maxSizes);
+	individual.fillLayersVector(layers, maxSizes);
 
-	int maxLineSize = (int)(pow(2, individual.maxDepth - 1) * (maxSizes.at(individual.maxDepth) + 1));
-	int originElementSize = maxSizes.at(individual.maxDepth - 1);
+	int maxLineSize = (int)(pow(2, individual.depth - 1) * (maxSizes.at(individual.depth - 1) + 1));
+	int originElementSize = maxSizes.at(individual.depth - 1);
 	vector <string> lines;
 	int elementSize = 0;
 
-	for (int i = individual.maxDepth - 1; i >= 0; i--) {
+	for (int i = individual.depth - 1; i >= 0; i--) {
 		vector<bool> emptyIndexes;
-		if (i == individual.maxDepth - 1) {
+		if (i == individual.depth - 1) {
 			elementSize = originElementSize;
 		}
 		else {
