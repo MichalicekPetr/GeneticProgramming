@@ -19,45 +19,23 @@ SubtreeMutation::SubtreeMutation(const double& mutationProb, const FunctionSet& 
 	this->funcSet = funcSet;
 }
 
-void SubtreeMutation::mutate(Individual& individual, const int & maxDepth)
+void SubtreeMutation::mutate(Individual& individual, const int& maxDepth)
 {
 	double seed = Random::randProb();
 	if (seed <= this->mutationProb) {
-		Node* point = individual.pickRandomNode();
-		int nodeCnt = 0;
-		int depth = 0;
-		individual.getTreeInfoRec(point, nodeCnt, depth, 1);
-		int newDepthUpperbound = min(ceil(maxDepth + 2), maxDepth);
+		int mutNodeIdx = individual.pickRandomNodeIdx();
+		int mutNodeDepth = Individual::calculateDepthFromIdx(mutNodeIdx);
+		int treeDepth = individual.getMaxDepth();
 
+		int newDepthUpperbound = max(1, min(treeDepth + 3 - mutNodeDepth, maxDepth));
 		int newDepth = Random::randInt(1, newDepthUpperbound);
 
-		Node* subTree;
 		double seed2 = Random::randProb();
-		if (seed2 <= 0.25) {
-			subTree = Individual::generateRandomTreeFullMethodNode(newDepth, this->funcSet, this->termSet);
-		}
-		else {
-			subTree = Individual::generateRandomTreeGrowMethodNode(newDepth, this->funcSet, this->termSet);
-		}
+		Individual subTree = (seed2 <= 0.25)
+			? Individual::generateRandomTreeFullMethod(newDepth, this->funcSet, this->termSet)
+			: Individual::generateRandomTreeGrowMethod(newDepth, this->funcSet, this->termSet);
 
-		Node* parent = point->getParent();
-		if (parent == nullptr) {
-			Node* oldRoot = individual.getRoot();
-			individual.setRoot(subTree);
-			individual.freeNodesRec(oldRoot);
-		}
-		else {
-			NodeDirection dir = point->getDirection();
-			subTree->createParentLink(parent, dir);
-			individual.freeNodesRec(point);
-		}
-
-		nodeCnt = 0;
-		depth = 0;
-		individual.getTreeInfoRec(individual.getRoot(), nodeCnt, depth, 1);
-		individual.setDepth(depth);
-		individual.setNodeCnt(nodeCnt);
-		individual.resetConstantTable();
+		individual.replaceNodeWithSubTree(subTree, mutNodeIdx, mutNodeDepth);
 	}
 }
 
@@ -84,33 +62,31 @@ void NodeReplacementMutation::setTerminalSet(TerminalSet termSet)
 
 void NodeReplacementMutation::mutate(Individual& individual, const int & maxDepth)
 {
-	int nodeCnt = individual.getNodeCnt();
-	for (int i = 0; i < nodeCnt; i++) {
-		double seed = Random::randProb();
-		bool flattenTreeCreated = false;
-		vector<Node*> flattenTree = vector<Node*>(0);
+	for (int i = 0; i <= individual.getLastNodeIdx(); i++) {
+		Node* current = individual.getNodeAt(i);
+		if (current != nullptr) {
+			double seed = Random::randProb();
+			if (seed <= this->mutationProb) {
+				if (current->isFunctionNode()) {
+					Function newFunc = this->funcSet.getRandomFunction();
+					FunctionNode* fnode = dynamic_cast<FunctionNode*>(current);
+					fnode->setFunc(newFunc);
+				}
+				else if (current->isTerminalNode()) {
+					Terminal newTerm = this->termSet.getRandomTerminal();
+					TerminalNode* tnode = dynamic_cast<TerminalNode*>(current);
+					
+					// One more constant or one less constant
+					if (newTerm.isDataPoint() != tnode->getTerminalReference().isDataPoint())
+						individual.resetConstantTable();
 
-		if (seed <= this->mutationProb) {
-			if (!flattenTreeCreated) {
-				flattenTree = individual.createFlattenTree();
+					tnode->setTerminal(newTerm);
+				}
+				else {
+					throw invalid_argument("Node isnt terminal neither func");
+				}
 			}
-			Node * node = flattenTree.at(i);
-
-			if (node->isFunctionNode()) {
-				Function newFunc = this->funcSet.getRandomFunction();
-				FunctionNode* fnode = dynamic_cast<FunctionNode*>(node);
-				fnode->setFunc(newFunc);
-			}
-			else if (node->isTerminalNode()) {
-				Terminal newTerm = this->termSet.getRandomTerminal();
-				TerminalNode* tnode = dynamic_cast<TerminalNode*>(node);
-				tnode->setTerminal(newTerm);
-			}
-			else {
-				throw invalid_argument("Node isnt terminal neither func");
-			}
-			individual.resetConstantTable();
-		}
+		}	
 	}
 }
 

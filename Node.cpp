@@ -45,43 +45,16 @@ void Node::createTreeCopyWithReplacePointRec(Node* original, Node* parrent, Node
 	return;
 }
 
+// Pøepsáno
 bool Node::isFunctionNode() const
 {
 	return this->type == FunctionNodeType;
 }
 
+// Pøepsáno
 bool Node::isTerminalNode() const
 {
 	return this->type == TerminalNodeType;
-}
-
-Node* Node::getLeftOffspring()
-{
-	return this->left;
-}
-
-Node* Node::getRightOffspring()
-{
-	return this->right;
-}
-
-Node* Node::getParent()
-{
-	return this->parent;
-}
-
-void Node::createParentLink(Node* parent, NodeDirection dir)
-{
-	this->parent = parent;
-	if (dir == NodeDirection::Left) {
-		parent->left = this;
-	}
-	else if (dir == NodeDirection::Right) {
-		parent->right = this;
-	}
-	else {
-		throw invalid_argument("Unknown direction");
-	}
 }
 
 Node* Node::createTreeCopy() const
@@ -171,33 +144,33 @@ bool TerminalNode::isTerminalNode() const
 	return true;
 }
 
+// Pøepsáno
 Node* TerminalNode::createRandomTerminalNode(const TerminalSet& terminalSet, const double & varProb)
 {
-	Terminal terminal = terminalSet.getRandomTerminal(0.5);
+	Terminal terminal = terminalSet.getRandomTerminal(1 - varProb);
 	Node* createdNode = new TerminalNode(terminal);
 	return createdNode;
 }
 
+// Pøepsáno
 void TerminalNode::setTerminal(const Terminal& terminal)
 {
 	this->terminal = terminal;
 }
 
+// Pøepsáno
 string TerminalNode::toString() const
 {
 	return this->terminal.getLabel();
 }
 
+// Pøepsáno
 Terminal & TerminalNode::getTerminalReference()
 {
 	return this->terminal;
 }
 
-double TerminalNode::evaulateNodeRec() const
-{
-	return this->terminal.getValue();
-}
-
+// Pøepsáno
 Node* TerminalNode::createDeepCopy() const
 {
 	Terminal terminalCopy = Terminal(this->terminal);
@@ -205,37 +178,36 @@ Node* TerminalNode::createDeepCopy() const
 	return deepCopy;
 }
 
+// Pøepsáno
 double TerminalNode::getValue() const
 {
 	return this->terminal.getValue();
 }
 
+// Pøepsáno
 bool TerminalNode::isConstant() const
 {
 	return !this->terminal.isDataPoint();
 }
 
+// Pøepsáno
 unique_ptr<Node> TerminalNode::clone() const
 {
 	return make_unique<TerminalNode>(*this);
 }
 
+// Pøepsáno
 FunctionNode::FunctionNode()
 {
-	this->left = nullptr;
-	this->right = nullptr;
-	this->parent = nullptr;
 	this->type = FunctionNodeType;
 	this->function = Function();
 }
 
+// Pøepsáno
 FunctionNode::FunctionNode(const Function& func)
 {
-	this->left = nullptr;
-	this->right = nullptr;
-	this->parent = nullptr;
 	this->type = FunctionNodeType;
-	this->function = func;
+	this->function = Function(func);
 }
 
 // Pøepsáno
@@ -245,16 +217,19 @@ FunctionNode::FunctionNode(const FunctionNode& original)
 	this->function = Function(original.function);
 }
 
+// Pøepsáno
 bool FunctionNode::isFunctionNode() const
 {
 	return true;
 }
 
+// Pøepsáno
 bool FunctionNode::isTerminalNode() const
 {
 	return false;
 }
 
+// Pøepsáno
 Node* FunctionNode::createRandomFunctionNode(const FunctionSet& functionSet)
 {
 	Function func = functionSet.getRandomFunction();
@@ -262,6 +237,7 @@ Node* FunctionNode::createRandomFunctionNode(const FunctionSet& functionSet)
 	return funcNode;
 }
 
+// Pøepsáno
 string FunctionNode::toString() const
 {
 	return this->function.getName();
@@ -319,27 +295,20 @@ double FunctionNode::evaluateFunction(const double& left, const double& right, b
 	}
 }
 
+// Pøepsáno
 Node* FunctionNode::createDeepCopy() const
 {
 	FunctionNode* deepCopy = new FunctionNode(Function(this->function));
 	return deepCopy;
 }
 
-Node* FunctionNode::getLeftOffspring()
-{
-	return this->left;
-}
-
-Node* FunctionNode::getRightOffspring()
-{
-	return this->right;
-}
-
+// Pøepsáno
 void FunctionNode::setFunc(Function newFunc)
 {
 	this->function = newFunc;
 }
 
+// Pøepsáno
 unique_ptr<Node> FunctionNode::clone() const
 {
 	return make_unique<FunctionNode>(*this);

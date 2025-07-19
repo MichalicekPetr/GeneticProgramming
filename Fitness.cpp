@@ -21,7 +21,7 @@ double ClassicFitnessFunction::evaluate(const Individual& individual, shared_ptr
 		rowCnt += 1;
 		int rowIdx = x.first;
 		double target = x.second;
-		double result = individual.evaluateTree(conn, dbName, tableName, rowIdx);
+		double result = individual.evaluate(conn, dbName, tableName, rowIdx);
 		acc += abs(target - result);
 	}
 
@@ -42,7 +42,7 @@ double ClassicFitnessFunction::evaluate(const Individual& individual, shared_ptr
  		rowCnt += 1;
 		int rowIdx = x.first;
 		double target = x.second;
-		double result = individual.evaluateTree(dbMapPtr->at(rowIdx));
+		double result = individual.evaluate(dbMapPtr->at(rowIdx));
 		acc += abs(target - result);
 	}
 

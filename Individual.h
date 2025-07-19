@@ -24,6 +24,10 @@ private:
 	void addBranchLines(vector<string>& lines, const int& depth, const int& elementSize, const vector<bool>& emptyIndexes) const;
 	string createBranchLineHorizontal(const int& depth, const int& elementSize, const vector<bool>& emptyIndexes) const;
 	string createBranchLineVertical(const int& depth, const int& elementSize, const vector<bool>& emptyIndexes) const;
+	void eraseSubtree(const int& idx);
+	void updateStats();
+	void ensureFullBinaryStructure();
+
 
 public:
 	Individual();
@@ -33,11 +37,16 @@ public:
 	Node* pickRandomNode() const;
 	Node* pickRandomLeaf() const;
 	Node* pickRandomInnerNode() const;
+	int pickRandomNodeIdx() const;
+	int pickRandomLeafIdx() const;
+	int pickRandomInnerNodeIdx() const;
 
 	static Individual generateRandomTreeGrowMethod(const int& depth, const FunctionSet& functionSet, const TerminalSet& terminalSet);
 	static Individual generateRandomTreeFullMethod(const int& depth, const FunctionSet& functionSet, const TerminalSet& terminalSet);
 	static int getParentIdx(const int& idx);
 	static int getLeftChildIdx(const int& idx);
+	static int calculateDepthFromIdx(const int& idx);
+	static int calculateInsertIdx(const int& subtreeIdx, const int& replacePointIdx);
 
 	double evaluate(shared_ptr<Connection>& conn, string dbName, string tableName, const int& rowIdx) const;
 	double evaluate(const map<string, double>& rowMap) const;
@@ -50,9 +59,11 @@ public:
 	int getNodeCnt() const;
 	int getReservedCnt() const;
 	int getLastNodeIdx() const;
-	
+	Node* getNodeAt(const int& idx) const;
+
 	void setDepth(int depth);
 	void setNodeCnt(int nodeCnt);
+	void setNodeAt(int idx, unique_ptr<Node> newNode);
 
 	void createConstantTable();
 	ConstantTable& getConstantTableRef();
@@ -63,5 +74,7 @@ public:
 
 	bool isLeafAtIdx(const int& idx) const;
 	bool isInnerNodeAtIdx(const int& idx) const;
-};
 
+	void replaceNodeWithSubTree(const Individual& subtree, const int& replacePointIdx, const int &replacePointDepth);
+	Individual extractSubtree(const int& idx) const;
+};

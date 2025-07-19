@@ -19,19 +19,19 @@ Individual TwoPointCrossover::createOffspring(const Individual& parent1, const I
 	while(TRUE){
 		double seed1 = Random::randProb();
 		double seed2 = Random::randProb();
-		Node * point1, * point2;
+		int idx1, idx2;
 
 		if (seed1 <= this->leafPickProb) {
-			point1 = parent1.pickRandomLeaf();
+			idx1 = parent1.pickRandomLeafIdx();
 		}
 		else {
-			point1 = parent1.pickRandomInnerNode();
+			idx1 = parent1.pickRandomInnerNodeIdx();
 		}
 		if (seed2 <= this->leafPickProb) {
-			point2 = parent2.pickRandomLeaf();
+			idx2 = parent2.pickRandomLeafIdx();
 		}
 		else {
-			point2 = parent2.pickRandomInnerNode();
+			idx2 = parent2.pickRandomInnerNodeIdx();
 		}
 
 		Node* subtree = point2->createTreeCopy();

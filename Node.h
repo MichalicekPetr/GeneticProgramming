@@ -25,11 +25,6 @@ public:
 	virtual bool isFunctionNode() const = 0;
 	virtual bool isTerminalNode() const = 0;
 
-	virtual Node* getLeftOffspring();
-	virtual Node* getRightOffspring();
-	virtual Node* getParent();
-
-	void createParentLink(Node* parent, NodeDirection dir);
 
 	virtual string toString() const = 0;
 
@@ -58,8 +53,6 @@ public:
 	string toString() const override;
 	double evaluateFunction(const double& left, const double& right, bool leftValid, bool rightValid);
 	Node* createDeepCopy() const override;
-	Node* getLeftOffspring() override;
-	Node* getRightOffspring() override;
 	void setFunc(Function newFunc);
 	unique_ptr<Node> clone() const override;
 };

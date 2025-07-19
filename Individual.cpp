@@ -152,6 +152,46 @@ bool Individual::isInnerNodeAtIdx(const int& idx) const
 	return !this->isLeafAtIdx(idx);
 }
 
+void Individual::replaceNodeWithSubTree(const Individual& subtree, const int& replacePointIdx, const int& replacePointDepth)
+{
+	this->eraseSubtree(replacePointIdx);
+
+	int newDepth = max(replacePointDepth + subtree.getMaxDepth() - 1, this->depth);
+	if (newDepth > this->depth) {
+		this->reserved = pow(2, newDepth) - 1;
+		this->nodeVec.reserve(this->reserved); // rezervace kapacity
+	}
+
+	for (int i = 0; i < subtree.nodeVec.size(); i++) {
+		if (subtree.nodeVec.at(i) != nullptr) {
+			int insertIdx = Individual::calculateInsertIdx(i, replacePointIdx);
+
+			if (insertIdx >= this->nodeVec.size()) {
+				int diff = insertIdx - this->nodeVec.size() + 1;
+				this->nodeVec.insert(this->nodeVec.end(), diff, nullptr);
+			}
+
+			Node* original = subtree.nodeVec.at(i).get();
+			this->nodeVec.at(insertIdx) = original->clone();
+		}
+	}
+
+	this->updateStats();
+	this->resetConstantTable();
+	this->ensureFullBinaryStructure();
+}
+
+void Individual::ensureFullBinaryStructure()
+{
+	int requiredSize = (1 << this->depth) - 1; // ekvivalent pow(2, depth) - 1
+
+	if (static_cast<int>(nodeVec.size()) < requiredSize) {
+		nodeVec.insert(nodeVec.end(), requiredSize - nodeVec.size(), nullptr);
+	}
+
+	this->reserved = requiredSize; // ✅ aktualizuj reserved
+}
+
 
 
 // Přepsáno
@@ -173,6 +213,36 @@ int Individual::getParentIdx(const int& idx)
 int Individual::getLeftChildIdx(const int& idx)
 {
 	return ((idx + 1) * 2) - 1;
+}
+
+// Přepsáno
+int Individual::calculateDepthFromIdx(const int& idx)
+{
+	return static_cast<int>(floor(log2(idx + 1)));
+}
+
+// Přepsáno
+int Individual::calculateInsertIdx(const int& subtreeIdx, const int& replacePointIdx)
+{
+	int idx = replacePointIdx;
+	int current = subtreeIdx;
+
+	while (current > 0) {
+		int parent = (current - 1) / 2;
+
+		if (current == 2 * parent + 1) {
+			// current je levý potomek → jdeme doleva
+			idx = 2 * idx + 1;
+		}
+		else {
+			// current je pravý potomek → jdeme doprava
+			idx = 2 * idx + 2;
+		}
+
+		current = parent;
+	}
+
+	return idx; // ← tohle je index do nodeVec
 }
 
 // Přepsáno
@@ -255,6 +325,50 @@ string Individual::createBranchLineVertical(const int& depth, const int& element
 	line.append(lastPartLen, ' ');
 
 	return line;
+}
+
+// Přepsáno
+void Individual::eraseSubtree(const int& idx)
+{
+	if (idx < 0 || idx > lastNodeIdx || !nodeVec.at(idx)) return;
+
+	vector<int> idxQueue;
+	idxQueue.push_back(idx);
+
+	while (!idxQueue.empty()) {
+		int currentIdx = idxQueue.back();
+		idxQueue.pop_back();
+
+		int leftChildIdx = getLeftChildIdx(currentIdx);
+		int rightChildIdx = leftChildIdx + 1;
+
+		if (leftChildIdx <= lastNodeIdx && nodeVec.at(leftChildIdx)) {
+			idxQueue.push_back(leftChildIdx);
+		}
+		if (rightChildIdx <= lastNodeIdx && nodeVec.at(rightChildIdx)) {
+			idxQueue.push_back(rightChildIdx);
+		}
+
+		nodeVec.at(currentIdx) = nullptr;
+	}
+}
+
+// Přepsáno
+void Individual::updateStats()
+{
+	int nodeCntAcc = 0;
+	int lastIdx = -1;
+
+	for (size_t i = 0; i < nodeVec.size(); i++) {
+		if (nodeVec[i]) {
+			nodeCntAcc++;
+			lastIdx = static_cast<int>(i);
+		}
+	}
+
+	this->lastNodeIdx = lastIdx;
+	this->nodeCnt = nodeCntAcc;
+	this->depth = (lastIdx >= 0) ? this->calculateDepthFromIdx(lastIdx) : 0;
 }
 
 // Přepsáno
@@ -426,6 +540,64 @@ Node* Individual::pickRandomInnerNode() const
 		}
 	}
 	return pick;
+}
+
+// Přepsáno
+int Individual::pickRandomNodeIdx() const
+{
+	if (this->nodeCnt == 0) {
+		return -1;
+	}
+
+	int seed = -1;
+	while (true) {
+		seed = Random::randInt(0, this->lastNodeIdx);
+		if (this->nodeVec.at(seed) != nullptr) {
+			break;
+		}
+	}
+	return seed;
+}
+
+// Přepsáno
+int Individual::pickRandomLeafIdx() const
+{
+	if (this->nodeCnt == 0) {
+		return -1;
+	}
+
+	int seed = -1;
+	while (true) {
+		int seed = Random::randInt(0, this->lastNodeIdx);
+		if (this->nodeVec.at(seed) != nullptr) {
+			if (this->isLeafAtIdx(seed)) {
+				break;
+			}
+		}
+	}
+	return seed;
+}
+
+// Přepsáno
+int Individual::pickRandomInnerNodeIdx() const
+{
+	if (this->nodeCnt == 0) {
+		return -1;
+	}
+	if (this->nodeCnt == 1) {
+		return 0;
+	}
+
+	int seed = -1;
+	while (true) {
+		int seed = Random::randInt(0, this->lastNodeIdx);
+		if (this->nodeVec.at(seed) != nullptr) {
+			if (this->isInnerNodeAtIdx(seed)) {
+				break;
+			}
+		}
+	}
+	return seed;
 }
 
 // Přepsáno
@@ -616,6 +788,17 @@ void Individual::setNodeCnt(int nodeCnt)
 	this->nodeCnt = nodeCnt;
 }
 
+void Individual::setNodeAt(int idx, unique_ptr<Node> newNode)
+{
+	if (idx < 0) return;
+
+	if (idx >= static_cast<int>(nodeVec.size())) {
+		nodeVec.insert(nodeVec.end(), idx - nodeVec.size() + 1, nullptr);
+	}
+
+	nodeVec.at(idx) = std::move(newNode);
+}
+
 // Přepsáno
 std::ostream& operator<<(std::ostream& os, const Individual& individual)
 {
@@ -677,4 +860,82 @@ std::ostream& operator<<(std::ostream& os, const Individual& individual)
 	}
 
 	return os;
+}
+
+// Přepsáno
+Node* Individual::getNodeAt(const int& idx) const
+{
+	if (idx < 0 || idx >= static_cast<int>(nodeVec.size())) {
+		return nullptr;
+	}
+	if (!nodeVec.at(idx)) {
+		return nullptr; // ochrana proti nullptr ve vektoru
+	}
+	return nodeVec.at(idx).get();
+}
+
+Individual Individual::extractSubtree(const int& idx) const
+{
+	if (idx < 0 || idx >= static_cast<int>(nodeVec.size()) || nodeVec.at(idx) == nullptr) {
+		throw std::invalid_argument("Invalid subtree root index.");
+	}
+
+	vector<unique_ptr<Node>> newNodeVec;
+	queue<pair<int, int>> toVisit;  // pair: <original_idx, new_idx>
+	map<int, int> indexMap;         // maps old indices → new indices
+
+	toVisit.push({ idx, 0 });
+	newNodeVec.resize(1);
+
+	while (!toVisit.empty()) {
+		auto [oldIdx, newIdx] = toVisit.front();
+		toVisit.pop();
+
+		if (!nodeVec.at(oldIdx)) {
+			newNodeVec[newIdx] = nullptr;
+			continue;
+		}
+
+		newNodeVec[newIdx] = nodeVec.at(oldIdx)->clone();
+
+		// Levý potomek
+		int oldLeft = getLeftChildIdx(oldIdx);
+		if (oldLeft <= lastNodeIdx && oldLeft < static_cast<int>(nodeVec.size()) && nodeVec.at(oldLeft)) {
+			int newLeft = getLeftChildIdx(newIdx);
+			if (newLeft >= static_cast<int>(newNodeVec.size()))
+				newNodeVec.resize(newLeft + 1, nullptr);
+
+			toVisit.push({ oldLeft, newLeft });
+		}
+
+		// Pravý potomek
+		int oldRight = getLeftChildIdx(oldIdx) + 1;
+		if (oldRight <= lastNodeIdx && oldRight < static_cast<int>(nodeVec.size()) && nodeVec.at(oldRight)) {
+			int newRight = getLeftChildIdx(newIdx) + 1;
+			if (newRight >= static_cast<int>(newNodeVec.size()))
+				newNodeVec.resize(newRight + 1, nullptr);
+
+			toVisit.push({ oldRight, newRight });
+		}
+	}
+
+	// Odvoď parametry pro konstruktor
+	int newLastIdx = static_cast<int>(newNodeVec.size()) - 1;
+	int newNodeCnt = 0;
+	for (auto& ptr : newNodeVec)
+		if (ptr) newNodeCnt++;
+
+	int newDepth = calculateDepthFromIdx(newLastIdx);
+	int newReserved = static_cast<int>(newNodeVec.size());
+
+	// Sestav nový Individual pomocí interního konstruktoru
+	Individual result;
+	result.nodeVec = std::move(newNodeVec);
+	result.nodeCnt = newNodeCnt;
+	result.depth = newDepth;
+	result.lastNodeIdx = newLastIdx;
+	result.reserved = newReserved;
+	result.constantTableCreated = false;
+
+	return result;
 }
