@@ -193,7 +193,8 @@ int main()
             "3 for genetic programming with window\n"
             "4 for show table create script\n"
             "5 for show row insert script\n"
-            "6 for hyperparam tuning\n" << endl;
+            "6 for hyperparam tuning\n" 
+            "7 for array representation test\n" << endl;
         int choice;
         cin >> choice;
 
@@ -428,6 +429,81 @@ int main()
         }
         else if (choice == 6) {
             tuneHyperParamatersGP();
+        }
+        else if (choice == 7) {
+            MysqlConnection connection;
+            connection.connectToDb("localhost", "root", "krtek", "testschema", 3306);
+            vector<string> colNames = connection.getColNames("testschema", "testdb1");
+            colNames.erase(std::remove(colNames.begin(), colNames.end(), "y"), colNames.end());
+
+            FunctionSet funcSet = FunctionSet::createArithmeticFunctionSet();
+            TerminalSet termSet = TerminalSet(-5, 5, false, colNames);
+
+            GeneticProgramming geneticProgramming = GeneticProgramming();
+
+            int popSize = 100;
+            geneticProgramming.setPopulation(Population(popSize, unique_ptr<PopulationInitMethod>(new RandomHalfFullHalfGrowInitialization())));
+
+            geneticProgramming.setFunctionSet(funcSet);
+            geneticProgramming.setTerminalSet(termSet);
+
+            double subtreeMutProb = 0.06;
+            double replaceNodeMutProb = 0.03;
+            geneticProgramming.setMutation(unique_ptr<Mutation>(new CombinedMutation(subtreeMutProb, replaceNodeMutProb, funcSet, termSet)));
+
+            int tournamentSize = 4;
+            geneticProgramming.setSelection(unique_ptr<Selection>(new TournamentSelection(tournamentSize)));
+
+            double crossoverProb = 0.7;
+            double leafPickProb = 0.1;
+            geneticProgramming.setCrossover(unique_ptr<Crossover>(new TwoPointCrossover(leafPickProb)), crossoverProb);
+
+            geneticProgramming.setFitness(unique_ptr<FitnessFunction>(new ClassicFitnessFunction()));
+
+            string dbName = "testschema";
+            string tableName = "testdb1";
+            string primaryKey = "idx";
+            bool saveDbToMemory = true;
+            geneticProgramming.setDbThings(shared_ptr<Connection>(new MysqlConnection()), dbName, tableName, primaryKey, saveDbToMemory);
+
+            string target = "y";
+            geneticProgramming.setTarget(target);
+
+            string url = "localhost";
+            string user = "root";
+            string password = "krtek";
+            int port = 3306;
+            geneticProgramming.setLoginParams(url, user, password, port);
+
+            double randomIndividualProb = 0.04;
+            geneticProgramming.setRandomIndividualProb(randomIndividualProb);
+
+            bool constantTuning = true;
+            double constantTuningMaxTime = 2;
+            geneticProgramming.setTuneConstants(constantTuning, constantTuningMaxTime);
+
+            double vectorGA_crossoverProb = 0.7;
+            double vectorGA_mutationProb = 0.03;
+            int vectorGA_populationSize = 50;
+            int vectorGA_tournamentSize = 4;
+            double vectorGA_randomIndividualProb = 0.03;
+            double vectorGA_newIndividualRatio = 0.8;
+            geneticProgramming.setVectorGAParams(vectorGA_crossoverProb, vectorGA_mutationProb, vectorGA_tournamentSize,
+                vectorGA_randomIndividualProb, vectorGA_populationSize, vectorGA_newIndividualRatio);
+
+            bool datFile = true;
+            string GPdataFolderPath = "C:/Users/petrm/Desktop/GeneticPrograming/Data/DataFiles/GP/";
+            string GPGAdataFolderPath = "C:/Users/petrm/Desktop/GeneticPrograming/Data/DataFiles/GP+GA/";
+            geneticProgramming.setOutputFileParams(datFile, GPdataFolderPath, GPGAdataFolderPath);
+
+            bool useWindow = false;
+            int windowHeight = 2;
+            int windowWidth = 10;
+            geneticProgramming.setWindowParams(useWindow, windowHeight, windowWidth);
+
+            geneticProgramming.setMaxDepth(5);
+
+            geneticProgramming.standartRun(100, 4);
         }
         else {
             MysqlConnection connection;

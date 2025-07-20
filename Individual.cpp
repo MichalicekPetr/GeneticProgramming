@@ -4,6 +4,7 @@
 #include <tuple>
 #include <iostream>
 #include <ostream>
+#include <queue>
 
 #include "Individual.h"
 #include "Node.h"
@@ -888,7 +889,9 @@ Individual Individual::extractSubtree(const int& idx) const
 	newNodeVec.resize(1);
 
 	while (!toVisit.empty()) {
-		auto [oldIdx, newIdx] = toVisit.front();
+		pair<int, int> front = toVisit.front();
+		int oldIdx = front.first;
+		int newIdx = front.second;
 		toVisit.pop();
 
 		if (!nodeVec.at(oldIdx)) {
