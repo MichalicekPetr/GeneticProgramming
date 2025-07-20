@@ -7,43 +7,6 @@
 
 using namespace std;
 
-void Node::createTreeCopyRec(Node* original, Node* parrent, NodeDirection dir) const
-{
-	Node* copy = original->createDeepCopy();
-	copy->left = nullptr;
-	copy->right = nullptr;
-	copy->createParentLink(parrent, dir);
-
-	if (original->left != nullptr) {
-		createTreeCopyRec(original->left, copy, NodeDirection::Left);
-	}
-	if (original->right != nullptr) {
-		createTreeCopyRec(original->right, copy, NodeDirection::Right);
-	}
-
-	return;
-}
-
-void Node::createTreeCopyWithReplacePointRec(Node* original, Node* parrent, NodeDirection dir, Node* replaceOriginal, Node* replacePoint) const
-{
-	if (original == replaceOriginal) {
-		replacePoint->createParentLink(parrent, dir);
-	}
-	else {
-		Node* copy = original->createDeepCopy();
-		copy->left = nullptr;
-		copy->right = nullptr;
-		copy->createParentLink(parrent, dir);
-
-		if (original->left != nullptr) {
-			createTreeCopyWithReplacePointRec(original->left, copy, NodeDirection::Left, replaceOriginal, replacePoint);
-		}
-		if (original->right != nullptr) {
-			createTreeCopyWithReplacePointRec(original->right, copy, NodeDirection::Right, replaceOriginal, replacePoint);
-		}
-	}
-	return;
-}
 
 // Pøepsáno
 bool Node::isFunctionNode() const
@@ -55,60 +18,6 @@ bool Node::isFunctionNode() const
 bool Node::isTerminalNode() const
 {
 	return this->type == TerminalNodeType;
-}
-
-Node* Node::createTreeCopy() const
-{
-	Node* copy = this->createDeepCopy();
-
-	copy->left = nullptr;
-	copy->right = nullptr;
-	copy->parent = nullptr;
-
-	if (this->left != nullptr) {
-		createTreeCopyRec(this->left, copy, NodeDirection::Left);
-	}
-	if (this->right != nullptr) {
-		createTreeCopyRec(this->right, copy, NodeDirection::Right);
-	}
-
-	return copy;
-}
-
-Node* Node::createTreeCopyWithReplacePoint(Node* replaceOriginal, Node* replacePoint) const
-{
-	Node* copy = this->createDeepCopy();
-
-	copy->left = nullptr;
-	copy->right = nullptr;
-	copy->parent = nullptr;
-
-	if (this->left != nullptr) {
-		createTreeCopyWithReplacePointRec(this->left, copy, NodeDirection::Left, replaceOriginal, replacePoint);
-	}
-	if (this->right != nullptr) {
-		createTreeCopyWithReplacePointRec(this->right, copy, NodeDirection::Right, replaceOriginal, replacePoint);
-	}
-
-	return copy;
-}
-
-NodeDirection Node::getDirection()
-{
-	if (this->parent == nullptr) {
-		throw invalid_argument("No parent");
-	}
-	else {
-		if (this->parent->left == this) {
-			return NodeDirection::Left;
-		}
-		else if (this->parent->right == this) {
-			return NodeDirection::Right;
-		}
-		else {
-			throw invalid_argument("No parent");
-		}
-	}
 }
 
 // Pøepsáno

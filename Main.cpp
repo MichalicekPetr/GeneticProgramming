@@ -441,7 +441,7 @@ int main()
 
             GeneticProgramming geneticProgramming = GeneticProgramming();
 
-            int popSize = 100;
+            int popSize = 4;
             geneticProgramming.setPopulation(Population(popSize, unique_ptr<PopulationInitMethod>(new RandomHalfFullHalfGrowInitialization())));
 
             geneticProgramming.setFunctionSet(funcSet);
@@ -451,7 +451,7 @@ int main()
             double replaceNodeMutProb = 0.03;
             geneticProgramming.setMutation(unique_ptr<Mutation>(new CombinedMutation(subtreeMutProb, replaceNodeMutProb, funcSet, termSet)));
 
-            int tournamentSize = 4;
+            int tournamentSize = 2;
             geneticProgramming.setSelection(unique_ptr<Selection>(new TournamentSelection(tournamentSize)));
 
             double crossoverProb = 0.7;
@@ -479,7 +479,7 @@ int main()
             geneticProgramming.setRandomIndividualProb(randomIndividualProb);
 
             bool constantTuning = true;
-            double constantTuningMaxTime = 2;
+            double constantTuningMaxTime = 0.5 ;
             geneticProgramming.setTuneConstants(constantTuning, constantTuningMaxTime);
 
             double vectorGA_crossoverProb = 0.7;
@@ -503,7 +503,7 @@ int main()
 
             geneticProgramming.setMaxDepth(5);
 
-            geneticProgramming.standartRun(100, 4);
+            geneticProgramming.standartRun(3, 3, true);
         }
         else {
             MysqlConnection connection;

@@ -18,8 +18,7 @@ class Node
 protected:
 	NodeType type;
 
-	void createTreeCopyRec(Node* original, Node * parrent, NodeDirection dir) const;
-	void createTreeCopyWithReplacePointRec(Node* original, Node* parrent, NodeDirection dir, Node * replaceOriginal, Node * replacePoint) const;
+	
 
 public:
 	virtual bool isFunctionNode() const = 0;
@@ -28,11 +27,8 @@ public:
 
 	virtual string toString() const = 0;
 
-	Node* createTreeCopy() const;
-	Node* createTreeCopyWithReplacePoint(Node* replaceOriginal, Node* replacePoint) const;
 	virtual Node* createDeepCopy() const = 0;
 
-	NodeDirection getDirection();
 	virtual unique_ptr<Node> clone() const = 0;
 };
 

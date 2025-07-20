@@ -60,25 +60,27 @@ void GeneticProgramming::standartRun(const int & maxGenerationNum, const int & s
 	}
 	else {
 		if (this->saveDbToMemory) {
+			cout << "Saving db to memory start" << endl;
 			dbMapPtr = this->saveDbTableInMemory();
 			targetValues = this->connection->getTargetVarValues(this->target, this->primaryKey, this->tableName);
+			cout << "Saving db to memory end" << endl;
 		}
 	}
 
+	cout << "Population inicialization start" << endl;
 	int generationNum = 0;
 	int populationSize = this->population.getSize();
 	this->population.initPopulation(startTreeDepth, this->functionSet, this->terminalSet);
 	FitnessFunction * fitness = this->fitnessFunc.get();
 	Individual bestOfBest;
 	double bestScore = - numeric_limits<double>::infinity();
+	cout << "Population inicialization end" << endl;
 	
 	ofstream file;
 	if (this->datFile) {
 		string fileName = this->createFileName();
 		file = ofstream(fileName);
 	}
-
-
 
 	while (true) {
 		generationNum++;
@@ -96,15 +98,37 @@ void GeneticProgramming::standartRun(const int & maxGenerationNum, const int & s
 			for (int i = 0; i < this->population.getSize(); i++) {
 				double improvementAcc = 0;
 				Individual & individualRef = population.at(i);
+				if (debugPrints) {
+					cout << "Individual n." << i + 1 << endl << individualRef << endl;
+				}
 				double scoreBefore = fitness->evaluate(population.at(i), dbMapPtr, targetValues);
 				if (individualRef.hasConstantTable()) {
+					if (debugPrints) {
+						cout << "Constant table: " << endl;
+						individualRef.getConstantTableRef().debugPrint();
+					}
 					vector<double> constants = this->tuneConstants(individualRef, individualRef.getConstantTableRef().getTable(), dbMapPtr);
+					if (debugPrints) {
+						cout << "Constant table: " << endl;
+						individualRef.getConstantTableRef().debugPrint();
+					}
 					population.at(i).getConstantTableRef().setTable(constants);
 				}
 				else {
 					population.at(i).createConstantTable();
+					if (debugPrints) {
+						cout << "Constant table: " << endl;
+						individualRef.getConstantTableRef().debugPrint();
+					}
 					vector<double> constants = this->tuneConstants(population.at(i), vector<double>(0), dbMapPtr);
+					if (debugPrints) {
+						cout << "Constant table: " << endl;
+						individualRef.getConstantTableRef().debugPrint();
+					}
 					population.at(i).getConstantTableRef().setTable(constants);
+				}
+				if (debugPrints) {
+					cout << "Individual n." << i + 1 << " after constant tuning" << endl << individualRef << endl;
 				}
 
 				double scoreAfter = fitness->evaluate(population.at(i), dbMapPtr, targetValues);
@@ -162,7 +186,7 @@ void GeneticProgramming::standartRun(const int & maxGenerationNum, const int & s
 		if(debugPrints){
 			cout << "Average fitness: " << acc / (populationSize - infCnt) << endl;
 			cout << "Average depth: " << depthAcc / (populationSize - infCnt) << endl;
-			cout << "Average improvement: " << accImp / this->vectorGA_populationSize;
+			cout << "% of improvements: " << accImp / this->vectorGA_populationSize;
 			cout << "Best fitness: " << maxFitness << endl;
 			cout << "Best individual: " << endl << this->population.at(bestIndividualIdx) << endl;
 		}
@@ -184,6 +208,9 @@ void GeneticProgramming::standartRun(const int & maxGenerationNum, const int & s
 			
 			if (seed1 <= this->randomIndividualProb) { 
 				newIndividual = Individual::generateRandomTreeGrowMethod(startTreeDepth, this->functionSet, this->terminalSet);
+				if (debugPrints) {
+					cout << "New individual created by random: " << endl << newIndividual << endl;
+				}
 			}
 			else{
 				double seed2 = Random::randProb();
@@ -191,14 +218,20 @@ void GeneticProgramming::standartRun(const int & maxGenerationNum, const int & s
 					Individual & parent1 = this->selection->selectIndividual(this->population, fitnessValues);
 					Individual & parent2 = this->selection->selectIndividual(this->population, fitnessValues);
 					newIndividual = this->crossover->createOffspring(parent1, parent2, this->maxTreeDepth);
+					if (debugPrints) {
+						cout << "New individual created by crossover: " << endl << "Parent1:" << endl << parent1 << endl 
+							<< "Parent2:" << parent2 << endl << "New Individual:" << endl << newIndividual << endl;
+					}
 				}
 				else {
 					Individual & selected = this->selection->selectIndividual(this->population, fitnessValues);
 					newIndividual = Individual(selected);
+					cout << "New individual created copying: " << endl << newIndividual << endl;
 				}
 			}
 
 			this->mutation->mutate(newIndividual, this->maxTreeDepth);
+			cout << "New individual after mutation:" << endl << newIndividual << endl;
 			newPopulation.push_back(newIndividual);
 			newPopulationSize++;
 		}

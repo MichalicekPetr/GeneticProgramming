@@ -19,7 +19,7 @@ void Individual::fillLayersVector(vector<vector<string>>& layers, vector<int>& m
 	int currentDepth = 1;
 	int remaining = 1;
 	bool newDepth = true;
-	for (int i = 0; i < this->lastNodeIdx; i++) {
+	for (int i = 0; i <= this->lastNodeIdx; i++) {
 		newDepth = false;
 		if (this->nodeVec.at(i) == nullptr)
 			current = nullptr;
@@ -45,6 +45,7 @@ void Individual::fillLayersVector(vector<vector<string>>& layers, vector<int>& m
 			remaining = pow(2, currentDepth - 1);
 			newDepth = true;
 		}
+
 	}
 	
 	if (!newDepth) {
@@ -59,12 +60,14 @@ void Individual::createConstantTable()
 {
 	this->constantTable.reset();
 
-	for (int i = 0; i < this->lastNodeIdx; i++) {
+	for (int i = 0; i <= this->lastNodeIdx; i++) {
 		if (this->nodeVec.at(i) != nullptr) {
 			Node* current = this->nodeVec.at(i).get();
-			TerminalNode* terminalNode = dynamic_cast<TerminalNode*>(current);
-			if (terminalNode->isConstant()) {
-				terminalNode->getTerminalReference().setConstantLink(this->constantTable);
+			if (current->isTerminalNode()) {
+				TerminalNode* terminalNode = dynamic_cast<TerminalNode*>(current);
+				if (terminalNode->isConstant()) {
+					terminalNode->getTerminalReference().setConstantLink(this->constantTable);
+				}
 			}
 		}
 	}
@@ -169,11 +172,13 @@ void Individual::replaceNodeWithSubTree(const Individual& subtree, const int& re
 
 			if (insertIdx >= this->nodeVec.size()) {
 				int diff = insertIdx - this->nodeVec.size() + 1;
-				this->nodeVec.insert(this->nodeVec.end(), diff, nullptr);
+				for (int j = 0; j < diff; ++j) {
+					this->nodeVec.push_back(nullptr);
+				}
 			}
 
 			Node* original = subtree.nodeVec.at(i).get();
-			this->nodeVec.at(insertIdx) = original->clone();
+			this->nodeVec.at(insertIdx) = std::unique_ptr<Node>(original->clone());
 		}
 	}
 
@@ -187,7 +192,9 @@ void Individual::ensureFullBinaryStructure()
 	int requiredSize = (1 << this->depth) - 1; // ekvivalent pow(2, depth) - 1
 
 	if (static_cast<int>(nodeVec.size()) < requiredSize) {
-		nodeVec.insert(nodeVec.end(), requiredSize - nodeVec.size(), nullptr);
+		for (int i = static_cast<int>(nodeVec.size()); i < requiredSize; ++i) {
+			nodeVec.push_back(nullptr);
+		}
 	}
 
 	this->reserved = requiredSize; // ✅ aktualizuj reserved
@@ -301,7 +308,7 @@ string Individual::createBranchLineVertical(const int& depth, const int& element
 	int lastPartLen = (int)((elementSize - 1) / 2);
 	if (((elementSize - 1) % 2) == 1) {
 		lastPartLen += 1;
-	}
+	} 
 	line.append(firstPartLen, ' ');
 
 	int elementCnt = (int)pow(2, depth) - 1;
@@ -420,6 +427,7 @@ string Individual::createBranchLineHorizontal(const int& depth, const int& eleme
 // Přepsané
 Individual::Individual()
 {
+	cout << "Začátek default konstruktoru pro: " << this << endl;
 	this->nodeVec = vector<unique_ptr<Node>>(0);
 	this->reserved = 0;
 	this->nodeCnt = 0;
@@ -427,15 +435,17 @@ Individual::Individual()
 	this->constantTable = ConstantTable();
 	this->constantTableCreated = false;
 	this->lastNodeIdx = -1;
+	cout << "Konec default konstruktoru" << endl;
 }
 
 // Přepsané
 Individual::Individual(const Individual& original)
 {
+	cout << "Začátek copy konstruktoru pro " << this << " original: " << &original << endl;
 	lastNodeIdx = original.getLastNodeIdx();
 	nodeVec.reserve(lastNodeIdx);
 
-	for (int i = 0; i < lastNodeIdx; i++) {
+	for (int i = 0; i <= lastNodeIdx; i++) {
 		const Node* originalNode = original.nodeVec.at(i).get();
 		if (originalNode) {
 			nodeVec.push_back(originalNode->clone());  
@@ -447,20 +457,23 @@ Individual::Individual(const Individual& original)
 
 	this->nodeCnt = original.nodeCnt;
 	this->depth = original.depth;
-	this->lastNodeIdx = lastNodeIdx - 1;
 	this->reserved = lastNodeIdx;
 
 	this->constantTable = ConstantTable();
 	this->constantTableCreated = false;
+	cout << "Konec copy konstruktoru" << endl;
 }
 
 // Přepsáno
 Individual::Individual(const vector<int>& structure, const int& depth, const int& nodeCnt, const int& reserved, const int& lastNodeIdx, const FunctionSet& functionSet, const TerminalSet& terminalSet)
 {
+	cout << "Začátek konstruktoru pro " << this << endl;
 	this->nodeCnt = nodeCnt;
 	this->depth = depth;
 	this->reserved = reserved;
 	this->lastNodeIdx = lastNodeIdx;
+	this->constantTableCreated = false;
+	this->constantTable = ConstantTable();
 
 	nodeVec.reserve(reserved);
 
@@ -480,6 +493,8 @@ Individual::Individual(const vector<int>& structure, const int& depth, const int
 			throw std::runtime_error("Chyba ve struktuře stromu");
 		}
 	}
+	cout << "Last idx: " << this->lastNodeIdx << ", depth: " << this->depth << ", vec size: " << this->nodeVec.size() << endl;
+	cout << "Konec konstruktoru" << endl;
 }
 
 // Přepsáno
@@ -557,6 +572,7 @@ int Individual::pickRandomNodeIdx() const
 			break;
 		}
 	}
+	cout << seed << endl;
 	return seed;
 }
 
@@ -569,13 +585,14 @@ int Individual::pickRandomLeafIdx() const
 
 	int seed = -1;
 	while (true) {
-		int seed = Random::randInt(0, this->lastNodeIdx);
+		seed = Random::randInt(0, this->lastNodeIdx);
 		if (this->nodeVec.at(seed) != nullptr) {
 			if (this->isLeafAtIdx(seed)) {
 				break;
 			}
 		}
 	}
+	cout << seed << endl;
 	return seed;
 }
 
@@ -591,7 +608,7 @@ int Individual::pickRandomInnerNodeIdx() const
 
 	int seed = -1;
 	while (true) {
-		int seed = Random::randInt(0, this->lastNodeIdx);
+		seed = Random::randInt(0, this->lastNodeIdx);
 		if (this->nodeVec.at(seed) != nullptr) {
 			if (this->isInnerNodeAtIdx(seed)) {
 				break;
@@ -604,6 +621,7 @@ int Individual::pickRandomInnerNodeIdx() const
 // Přepsáno
 Individual Individual::generateRandomTreeGrowMethod(const int& depth, const FunctionSet& functionSet, const TerminalSet& terminalSet)
 {
+	cout << "grow method start" << endl;
 	if (depth < 1) {
 		throw invalid_argument("Depth has to be greater than 0");
 	}
@@ -645,6 +663,7 @@ Individual Individual::generateRandomTreeGrowMethod(const int& depth, const Func
 		}
 
 		// Struktura je naplněná, jde se tvořit strom
+		cout << "grow method end ,lastidx: " << lastIdx << endl;
 		return Individual(structure, treeDepth, nodeCnt, pow(2, depth) - 1, lastIdx, functionSet, terminalSet);
 	}
 }
@@ -652,6 +671,7 @@ Individual Individual::generateRandomTreeGrowMethod(const int& depth, const Func
 // Přepsáno
 Individual Individual::generateRandomTreeFullMethod(const int& depth, const FunctionSet& functionSet, const TerminalSet& terminalSet)
 {
+	cout << "full method start" << endl;
 	if (depth < 1) {
 		throw invalid_argument("Depth has to be greater than 0");
 		exit(1);
@@ -670,6 +690,7 @@ Individual Individual::generateRandomTreeFullMethod(const int& depth, const Func
 			structure.push_back(2);
 		}
 
+		cout << "full method end" << endl;
 		return Individual(structure, depth, nodeCnt, nodeCnt, lastIdx, functionSet, terminalSet);
 	}
 }
@@ -794,7 +815,9 @@ void Individual::setNodeAt(int idx, unique_ptr<Node> newNode)
 	if (idx < 0) return;
 
 	if (idx >= static_cast<int>(nodeVec.size())) {
-		nodeVec.insert(nodeVec.end(), idx - nodeVec.size() + 1, nullptr);
+		for (size_t i = nodeVec.size(); i <= idx; ++i) {
+			nodeVec.push_back(nullptr);
+		}
 	}
 
 	nodeVec.at(idx) = std::move(newNode);
@@ -808,7 +831,7 @@ std::ostream& operator<<(std::ostream& os, const Individual& individual)
 		return os;
 	}
 
-	vector<vector<string>> layers(individual.depth);
+	vector<vector<string>> layers;
 	vector<int> maxSizes;
 	int lineCnt = 0;
 
@@ -818,7 +841,6 @@ std::ostream& operator<<(std::ostream& os, const Individual& individual)
 	}
 
 	individual.fillLayersVector(layers, maxSizes);
-
 	int maxLineSize = (int)(pow(2, individual.depth - 1) * (maxSizes.at(individual.depth - 1) + 1));
 	int originElementSize = maxSizes.at(individual.depth - 1);
 	vector <string> lines;
@@ -826,6 +848,7 @@ std::ostream& operator<<(std::ostream& os, const Individual& individual)
 
 	for (int i = individual.depth - 1; i >= 0; i--) {
 		vector<bool> emptyIndexes;
+
 		if (i == individual.depth - 1) {
 			elementSize = originElementSize;
 		}
@@ -834,12 +857,10 @@ std::ostream& operator<<(std::ostream& os, const Individual& individual)
 		}
 
 		vector<string> elements = layers.at(i);
-		string line = "";;
-		int idx = -1;
+		string line = "";
 
-		int idx11 = 0;
 		for (const auto& element : elements) {
-			if (element == "") {
+			if (element.empty()) {
 				emptyIndexes.push_back(true);
 			}
 			else {
@@ -848,18 +869,26 @@ std::ostream& operator<<(std::ostream& os, const Individual& individual)
 			string elementResized = individual.addSpacesToElement(element, elementSize);
 			line += elementResized + " ";
 		}
+
+		// DOPLNĚNÍ na požadovanou velikost vrstvy
+		int expectedSize = pow(2, i);
+		while ((int)emptyIndexes.size() < expectedSize) {
+			emptyIndexes.push_back(true);
+			line += individual.addSpacesToElement("", elementSize) + " ";
+		}
+
 		lines.insert(lines.begin(), line);
 		lineCnt++;
+
 		if (i > 0) {
 			individual.addBranchLines(lines, i, elementSize, emptyIndexes);
-			lineCnt = lineCnt + 3;
+			lineCnt += 3;
 		}
 	}
 
 	for (int i = 0; i < lineCnt; i++) {
 		os << i << ": " << lines[i] << endl;
 	}
-
 	return os;
 }
 
@@ -878,6 +907,7 @@ Node* Individual::getNodeAt(const int& idx) const
 Individual Individual::extractSubtree(const int& idx) const
 {
 	if (idx < 0 || idx >= static_cast<int>(nodeVec.size()) || nodeVec.at(idx) == nullptr) {
+		cout << "nodeVec.size(): " << nodeVec.size() << " idx: " << idx << endl;
 		throw std::invalid_argument("Invalid subtree root index.");
 	}
 
@@ -906,7 +936,7 @@ Individual Individual::extractSubtree(const int& idx) const
 		if (oldLeft <= lastNodeIdx && oldLeft < static_cast<int>(nodeVec.size()) && nodeVec.at(oldLeft)) {
 			int newLeft = getLeftChildIdx(newIdx);
 			if (newLeft >= static_cast<int>(newNodeVec.size()))
-				newNodeVec.resize(newLeft + 1, nullptr);
+				newNodeVec.resize(newLeft + 1);
 
 			toVisit.push({ oldLeft, newLeft });
 		}
@@ -916,7 +946,7 @@ Individual Individual::extractSubtree(const int& idx) const
 		if (oldRight <= lastNodeIdx && oldRight < static_cast<int>(nodeVec.size()) && nodeVec.at(oldRight)) {
 			int newRight = getLeftChildIdx(newIdx) + 1;
 			if (newRight >= static_cast<int>(newNodeVec.size()))
-				newNodeVec.resize(newRight + 1, nullptr);
+				newNodeVec.resize(newRight + 1);
 
 			toVisit.push({ oldRight, newRight });
 		}

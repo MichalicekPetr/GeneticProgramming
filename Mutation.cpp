@@ -21,6 +21,7 @@ SubtreeMutation::SubtreeMutation(const double& mutationProb, const FunctionSet& 
 
 void SubtreeMutation::mutate(Individual& individual, const int& maxDepth)
 {
+	cout << "Subtree mutation start" << endl;
 	double seed = Random::randProb();
 	if (seed <= this->mutationProb) {
 		int mutNodeIdx = individual.pickRandomNodeIdx();
@@ -37,6 +38,7 @@ void SubtreeMutation::mutate(Individual& individual, const int& maxDepth)
 
 		individual.replaceNodeWithSubTree(subTree, mutNodeIdx, mutNodeDepth);
 	}
+	cout << "Subtree mutation end" << endl;
 }
 
 void SubtreeMutation::setTerminalSet(TerminalSet termSet)
