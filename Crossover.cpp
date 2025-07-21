@@ -24,7 +24,6 @@ Individual TwoPointCrossover::createOffspring(const Individual& parent1, const I
 			? parent2.pickRandomLeafIdx()
 			: parent2.pickRandomInnerNodeIdx();
 
-
 		// 2. Spoèítej hloubky obou uzlù
 		int depth1 = Individual::calculateDepthFromIdx(idx1);
 		int depth2 = Individual::calculateDepthFromIdx(idx2);

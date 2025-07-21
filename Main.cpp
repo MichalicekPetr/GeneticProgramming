@@ -447,9 +447,9 @@ int main()
             geneticProgramming.setFunctionSet(funcSet);
             geneticProgramming.setTerminalSet(termSet);
 
-            double subtreeMutProb = 0.06;
+            double subtreeMutProb = 1;
             double replaceNodeMutProb = 0.03;
-            geneticProgramming.setMutation(unique_ptr<Mutation>(new CombinedMutation(subtreeMutProb, replaceNodeMutProb, funcSet, termSet)));
+            geneticProgramming.setMutation(unique_ptr<Mutation>(new CombinedMutation(replaceNodeMutProb, subtreeMutProb, funcSet, termSet)));
 
             int tournamentSize = 2;
             geneticProgramming.setSelection(unique_ptr<Selection>(new TournamentSelection(tournamentSize)));

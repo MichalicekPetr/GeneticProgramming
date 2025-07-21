@@ -93,7 +93,9 @@ void Terminal::setValue(const map<string, double>& rowMap)
 {
 	string colName = this->dataPoint.getName();
 	this->value = rowMap.at(colName);
-	this->label = colName + "(" + to_string(this->value) + ")";
+	std::ostringstream stream;
+	stream << std::fixed << std::setprecision(0) << this->value;  // 2 desetinná místa
+	this->label = colName + "(" + stream.str() + ")";
 }
 
 void Terminal::setConstantLink(ConstantTable& table)

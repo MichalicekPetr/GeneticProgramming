@@ -5,6 +5,8 @@
 #include <iostream>
 #include <ostream>
 #include <queue>
+#include <map>
+#include <string>
 
 #include "Individual.h"
 #include "Node.h"
@@ -107,7 +109,7 @@ Individual& Individual::operator=(const Individual& original)
 	lastNodeIdx = original.getLastNodeIdx();
 	nodeVec.reserve(lastNodeIdx);
 
-	for (int i = 0; i < lastNodeIdx; i++) {
+	for (int i = 0; i <= lastNodeIdx; i++) {
 		const Node* originalNode = original.nodeVec.at(i).get();
 		if (originalNode) {
 			nodeVec.push_back(originalNode->clone());  // clone() → unique_ptr<Node>
@@ -121,7 +123,7 @@ Individual& Individual::operator=(const Individual& original)
 	nodeCnt = original.nodeCnt;
 	depth = original.depth;
 	reserved = lastNodeIdx;
-	this->lastNodeIdx = lastNodeIdx - 1;
+	this->lastNodeIdx = lastNodeIdx;
 
 	constantTable = ConstantTable();   // nebo original.constantTable pokud je to žádané
 	constantTableCreated = false;
@@ -226,7 +228,7 @@ int Individual::getLeftChildIdx(const int& idx)
 // Přepsáno
 int Individual::calculateDepthFromIdx(const int& idx)
 {
-	return static_cast<int>(floor(log2(idx + 1)));
+	return static_cast<int>(floor(log2(idx + 1))) + 1;
 }
 
 // Přepsáno
@@ -427,7 +429,6 @@ string Individual::createBranchLineHorizontal(const int& depth, const int& eleme
 // Přepsané
 Individual::Individual()
 {
-	cout << "Začátek default konstruktoru pro: " << this << endl;
 	this->nodeVec = vector<unique_ptr<Node>>(0);
 	this->reserved = 0;
 	this->nodeCnt = 0;
@@ -435,7 +436,6 @@ Individual::Individual()
 	this->constantTable = ConstantTable();
 	this->constantTableCreated = false;
 	this->lastNodeIdx = -1;
-	cout << "Konec default konstruktoru" << endl;
 }
 
 // Přepsané
@@ -694,6 +694,65 @@ Individual Individual::generateRandomTreeFullMethod(const int& depth, const Func
 		return Individual(structure, depth, nodeCnt, nodeCnt, lastIdx, functionSet, terminalSet);
 	}
 }
+
+/*
+Individual Individual::generateRandomTreePCT1(int maxDepth, double expectedSize, const FunctionSet& funcSet, const TerminalSet& termSet, const std::map<std::string, double>& probabilityMap)
+{
+		if (maxDepth < 1 || expectedSize < 1.0) {
+			throw invalid_argument("maxDepth and expectedSize must be positive.");
+		}
+
+		// Přepočet pravděpodobnosti výběru funkce
+		const auto& functions = funcSet.getFunctions();
+		double b = 0.0; // očekávaný počet potomků
+		std::vector<double> funcProbs;
+
+		for (const auto& func : functions) {
+			double p = probabilityMap.at(func.getName());
+			funcProbs.push_back(p);
+			b += p * func.getParity();
+		}
+
+		double p = 1.0 - (1.0 / (expectedSize * b));  // pravděpodobnost výběru funkce
+		p = std::clamp(p, 0.0, 1.0);
+
+		std::vector<std::unique_ptr<Node>> nodeVec;
+		int currentIdx = 0;
+		std::function<void(int, int)> ptc1Rec;
+
+		ptc1Rec = [&](int idx, int depth) {
+			if (idx >= (int)nodeVec.size()) nodeVec.resize(idx + 1);
+
+			if (depth >= maxDepth) {
+				Terminal term = termSet.getRandomTerminal();
+				nodeVec[idx] = std::make_unique<Node>(TerminalNode(term));
+				return;
+			}
+
+			if (Random::randProb() <= p) {
+				// Vygeneruj funkční uzel
+				Function f = funcSet.getRandomFunction(probabilityMap);
+				nodeVec[idx] = std::make_unique<Node>(FunctionNode(f));
+				for (int i = 0; i < f.getParity(); i++) {
+					int childIdx = (idx + 1) * 2 - 1 + i;
+					ptc1Rec(childIdx, depth + 1);
+				}
+			}
+			else {
+				// Terminál
+				Terminal term = termSet.getRandomTerminal();
+				nodeVec[idx] = std::make_unique<Node>(TerminalNode(term));
+			}
+			};
+
+		ptc1Rec(0, 1);
+
+		// Sestav strom
+		Individual result;
+		result.setNodeVec(std::move(nodeVec));
+		result.updateStats();
+		return result;
+}*/
 
 // Přepsáno
 double Individual::evaluate(shared_ptr<Connection>& conn, string dbName, string tableName, const int& rowIdx) const
