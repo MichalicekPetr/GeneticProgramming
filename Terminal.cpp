@@ -17,7 +17,7 @@ using namespace std;
 Terminal::Terminal()
 {
 	this->value = 0;
-	this->label = "Empty terminal";
+	this->label	 = "Empty terminal";
 	this->valuePtr = nullptr;
 	this->constant = true;
 	this->empty = true;

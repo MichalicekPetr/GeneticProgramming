@@ -79,5 +79,8 @@ public:
 
 	void replaceNodeWithSubTree(const Individual& subtree, const int& replacePointIdx, const int &replacePointDepth);
 	Individual extractSubtree(const int& idx) const;
+	
+	void setNodeVec(vector<unique_ptr<Node>>&& newVec);
+	int predictOffspringDepthAfterSubtreeReplace(int replaceIdx, int replaceNodeDepth, int subtreeDepth) const;
 
 };

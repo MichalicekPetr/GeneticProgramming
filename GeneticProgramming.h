@@ -2,6 +2,7 @@
 
 
 #include <memory>
+#include <omp.h>
 
 #include "Connection.h"
 #include "Crossover.h"
@@ -60,6 +61,7 @@ private:
 	int windowWidth;
 	
 	int maxTreeDepth;
+	int threadCnt;
 
 public:
 	GeneticProgramming();
@@ -83,6 +85,7 @@ public:
 	void setOutputFileParams(bool datFile, string GPdataFolderPath, string GPGAdataFolderPath);
 	void setWindowParams(bool useWindow, int windowHeight, int windowWidth);
 	void setMaxDepth(const int& maxDepth);
+	void setThreadCnt(const int& threadCnt);
 
 	vector<double> tuneConstants(Individual & individual, vector<double> originalConstants, shared_ptr<map<int, map<string, double>>> dbTablePtr = nullptr);
 

@@ -86,6 +86,52 @@ Function FunctionSet::getRandomFunction() const
 	return this->functions.at(seed);
 }
 
+Function FunctionSet::getRandomFunction(const std::map<std::string, double>& probabilityMap) const {
+	// Vytvoøíme vektor kumulativních pravdìpodobností
+	std::vector<double> cumulative;
+	std::vector<size_t> indices;
+	double total = 0.0;
+
+
+	for (size_t i = 0; i < functions.size(); ++i) {
+		const Function& f = functions[i];
+		std::map<std::string, double>::const_iterator it = probabilityMap.find(f.getName());
+		if (it == probabilityMap.end()) {
+			throw std::invalid_argument("Missing probability for function: " + f.getName());
+		}
+
+		double p = it->second;
+		if (p < 0.0) {
+			throw std::invalid_argument("Negative probability for function: " + f.getName());
+		}
+
+		total += p;
+		cumulative.push_back(total);   // mezisouèet
+		indices.push_back(i);          // odpovídající index ve functions
+	}
+
+	if (total == 0.0) {
+		throw std::runtime_error("Total function probability is zero.");
+	}
+
+	if (std::abs(total - 1.0) > 1e-6) {
+		throw std::runtime_error("Function probabilities must sum to 1.0");
+	}
+
+	// Náhodná hodnota v rozsahu <0, total)
+	double r = Random::randProb();
+
+	// Najdi první index, kde kumulativní pravdìpodobnost > r
+	for (size_t i = 0; i < cumulative.size(); ++i) {
+		if (r < cumulative[i]) {
+			return functions[indices[i]];
+		}
+	}
+
+	// Pokud nic nenajdeme (kvùli zaokrouhlení), vra poslední
+	return functions[indices.back()];
+}
+
 std::vector<int> FunctionSet::prepareFunctionIndexPool(const std::map<std::string, double>& functionProbabilities) const {
 	std::vector<int> indexPool;
 	for (int i = 0; i < functions.size(); ++i) {

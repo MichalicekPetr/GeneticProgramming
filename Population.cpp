@@ -20,13 +20,8 @@ vector<Individual> RandomHalfFullHalfGrowInitialization::initPopulation(const in
 			individuals.push_back(move(Individual::generateRandomTreeGrowMethod(depth, funcSet, termSet)));
 		}
 		fullTree = !fullTree;
-		cout << &individuals.at(i) << endl;
 	}
 
-	cout << "Last indexes " << endl;
-	for (auto x : individuals) {
-		cout << x.getLastNodeIdx() << endl;
-	}
 	return individuals;
 }
 

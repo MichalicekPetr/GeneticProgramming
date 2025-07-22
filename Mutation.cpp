@@ -23,16 +23,14 @@ void SubtreeMutation::mutate(Individual& individual, const int& maxDepth)
 {
 	cout << "Subtree mutation start" << endl;
 	double seed = Random::randProb();
-	cout << "seed: " <<  seed << " this->mutationProb: " << this->mutationProb << endl;
 	if (seed <= this->mutationProb) {
-		cout << "Mutating" << endl;
 		int mutNodeIdx = individual.pickRandomNodeIdx();
-		cout << "mutNodeIdx: " << mutNodeIdx << endl;
 		int mutNodeDepth = Individual::calculateDepthFromIdx(mutNodeIdx);
 		int treeDepth = individual.getMaxDepth();
 
-		int newDepthUpperbound = max(1, min(treeDepth + 3 - mutNodeDepth, maxDepth));
-		int newDepth = Random::randInt(1, newDepthUpperbound);
+		int newDepthUpperbound = max(1, min(treeDepth + 3 - mutNodeDepth, maxDepth - mutNodeDepth));
+		cout << "maxDepth - mutNodeDepth" << maxDepth - mutNodeDepth << endl;
+		int newDepth = Random::randInt(1, newDepthUpperbound	);
 
 		double seed2 = Random::randProb();
 		Individual subTree = (seed2 <= 0.25)
@@ -40,6 +38,14 @@ void SubtreeMutation::mutate(Individual& individual, const int& maxDepth)
 			: Individual::generateRandomTreeGrowMethod(newDepth, this->funcSet, this->termSet);
 
 		individual.replaceNodeWithSubTree(subTree, mutNodeIdx, mutNodeDepth);
+	}
+	cout << "Mutated individual:" << endl;
+	cout << individual << endl;
+
+	if (individual.getMaxDepth() > maxDepth) {
+		cout << "individual.getMaxDepth(): " << individual.getMaxDepth() << " maxDepth: " << maxDepth << endl;
+		throw invalid_argument("Depth is greater than max depth after subtree mutation");
+		exit(1);
 	}
 	cout << "Subtree mutation end" << endl;
 }

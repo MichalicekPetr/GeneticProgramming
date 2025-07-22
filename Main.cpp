@@ -5,6 +5,7 @@
 #include <chrono>
 #include <iostream>
 #include <memory>
+#include <map>
 
 #include "Connection.h"
 #include "Crossover.h"
@@ -194,7 +195,8 @@ int main()
             "4 for show table create script\n"
             "5 for show row insert script\n"
             "6 for hyperparam tuning\n" 
-            "7 for array representation test\n" << endl;
+            "7 for array representation test\n" 
+            "8 for PCT1 algorithm test\n" << endl;
         int choice;
         cin >> choice;
 
@@ -441,7 +443,7 @@ int main()
 
             GeneticProgramming geneticProgramming = GeneticProgramming();
 
-            int popSize = 4;
+            int popSize = 40;
             geneticProgramming.setPopulation(Population(popSize, unique_ptr<PopulationInitMethod>(new RandomHalfFullHalfGrowInitialization())));
 
             geneticProgramming.setFunctionSet(funcSet);
@@ -478,7 +480,7 @@ int main()
             double randomIndividualProb = 0.04;
             geneticProgramming.setRandomIndividualProb(randomIndividualProb);
 
-            bool constantTuning = true;
+            bool constantTuning = false;
             double constantTuningMaxTime = 0.5 ;
             geneticProgramming.setTuneConstants(constantTuning, constantTuningMaxTime);
 
@@ -502,8 +504,66 @@ int main()
             geneticProgramming.setWindowParams(useWindow, windowHeight, windowWidth);
 
             geneticProgramming.setMaxDepth(5);
+            geneticProgramming.setThreadCnt(3);
 
-            geneticProgramming.standartRun(3, 3, true);
+            geneticProgramming.standartRun(3, 3, false);
+        }
+        else if (choice == 8) {
+            MysqlConnection connection;
+            connection.connectToDb("localhost", "root", "krtek", "testschema", 3306);
+            vector<string> colNames = connection.getColNames("testschema", "testdb1");
+            colNames.erase(std::remove(colNames.begin(), colNames.end(), "y"), colNames.end());
+            FunctionSet funcSet = FunctionSet::createArithmeticFunctionSet();
+            TerminalSet termSet = TerminalSet(-5, 5, false, colNames);
+
+            map<string, double> pmap = {
+                {"+", 0.3}, {"*", 0.3}, {"-", 0.1}, {"%", 0.05}, {"neg", 0.2}, {"inv", 0.05}
+            };
+            Individual test;
+            test = Individual::generateRandomTreePCT1(1, 1, funcSet, termSet, pmap);
+            cout << test << endl;
+            test = Individual::generateRandomTreePCT1(2, 2, funcSet, termSet, pmap);
+            cout << test << endl;
+            test = Individual::generateRandomTreePCT1(2, 3, funcSet, termSet, pmap);
+            cout << test << endl;
+            test = Individual::generateRandomTreePCT1(2, 2, funcSet, termSet, pmap);
+            cout << test << endl;
+            test = Individual::generateRandomTreePCT1(2, 3, funcSet, termSet, pmap);
+            cout << test << endl;
+            test = Individual::generateRandomTreePCT1(2, 2, funcSet, termSet, pmap);
+            cout << test << endl;
+            test = Individual::generateRandomTreePCT1(2, 3, funcSet, termSet, pmap);
+            cout << test << endl;
+            test = Individual::generateRandomTreePCT1(2, 2, funcSet, termSet, pmap);
+            cout << test << endl;
+            test = Individual::generateRandomTreePCT1(2, 3, funcSet, termSet, pmap);
+            cout << test << endl;
+            test = Individual::generateRandomTreePCT1(2, 2, funcSet, termSet, pmap);
+            cout << test << endl;
+            test = Individual::generateRandomTreePCT1(2, 3, funcSet, termSet, pmap);
+            cout << test << endl;
+            test = Individual::generateRandomTreePCT1(2, 2, funcSet, termSet, pmap);
+            cout << test << endl;
+            test = Individual::generateRandomTreePCT1(2, 3, funcSet, termSet, pmap);
+            cout << test << endl;
+            test = Individual::generateRandomTreePCT1(3, 4, funcSet, termSet, pmap);
+            cout << test << endl;
+            test = Individual::generateRandomTreePCT1(3, 5, funcSet, termSet, pmap);
+            cout << test << endl;
+            test = Individual::generateRandomTreePCT1(3, 6, funcSet, termSet, pmap);
+            cout << test << endl;
+            test = Individual::generateRandomTreePCT1(3, 7, funcSet, termSet, pmap);
+            cout << test << endl;
+            test = Individual::generateRandomTreePCT1(4, 8, funcSet, termSet, pmap);
+            cout << test << endl;
+            test = Individual::generateRandomTreePCT1(4, 9, funcSet, termSet, pmap);
+            cout << test << endl;
+            test = Individual::generateRandomTreePCT1(4, 10, funcSet, termSet, pmap);
+            cout << test << endl;
+            test = Individual::generateRandomTreePCT1(4, 11, funcSet, termSet, pmap);
+            cout << test << endl;
+            test = Individual::generateRandomTreePCT1(4, 12, funcSet, termSet, pmap);
+            cout << test << endl;
         }
         else {
             MysqlConnection connection;

@@ -1,9 +1,10 @@
-#include <ctime>
+﻿#include <ctime>
 #include <fstream>
 #include <chrono>
 #include <iostream>
 #include <limits>
 #include <stdexcept>
+#include <mutex>
 
 #include "GeneticProgramming.h"
 #include "Population.h"
@@ -42,6 +43,7 @@ GeneticProgramming::GeneticProgramming()
 	this->windowHeight = 0;
 	this->windowWidth = 0;
 	this->maxTreeDepth = 10;
+	this->threadCnt = 1;
 }
 
 void GeneticProgramming::standartRun(const int & maxGenerationNum, const int & startTreeDepth, bool debugPrints)
@@ -60,21 +62,17 @@ void GeneticProgramming::standartRun(const int & maxGenerationNum, const int & s
 	}
 	else {
 		if (this->saveDbToMemory) {
-			cout << "Saving db to memory start" << endl;
 			dbMapPtr = this->saveDbTableInMemory();
 			targetValues = this->connection->getTargetVarValues(this->target, this->primaryKey, this->tableName);
-			cout << "Saving db to memory end" << endl;
 		}
 	}
 
-	cout << "Population inicialization start" << endl;
 	int generationNum = 0;
 	int populationSize = this->population.getSize();
 	this->population.initPopulation(startTreeDepth, this->functionSet, this->terminalSet);
 	FitnessFunction * fitness = this->fitnessFunc.get();
 	Individual bestOfBest;
 	double bestScore = - numeric_limits<double>::infinity();
-	cout << "Population inicialization end" << endl;
 	
 	ofstream file;
 	if (this->datFile) {
@@ -83,6 +81,8 @@ void GeneticProgramming::standartRun(const int & maxGenerationNum, const int & s
 	}
 
 	while (true) {
+		// Začátek měření času
+		auto start = std::chrono::high_resolution_clock::now();
 		generationNum++;
 		if (generationNum > maxGenerationNum) {
 			break;
@@ -95,93 +95,178 @@ void GeneticProgramming::standartRun(const int & maxGenerationNum, const int & s
 		double accImp = 0.0;
 		if (this->constantTuning) {
 			
+			
+
+			// Nastavení počtu vláken
+			omp_set_num_threads(this->threadCnt);
+
+			// Použijeme reduction pro správný součet accImp
+			#pragma omp parallel for reduction(+:accImp)
 			for (int i = 0; i < this->population.getSize(); i++) {
 				double improvementAcc = 0;
-				Individual & individualRef = population.at(i);
+				Individual& individualRef = population.at(i);
+
 				if (debugPrints) {
-					cout << "Individual n." << i + 1 << endl << individualRef << endl;
+				#pragma omp critical
+					{
+						cout << "Individual n." << i + 1 << endl << individualRef << endl;
+					}
 				}
-				double scoreBefore = fitness->evaluate(population.at(i), dbMapPtr, targetValues);
+
+				double scoreBefore = fitness->evaluate(individualRef, dbMapPtr, targetValues);
+
 				if (individualRef.hasConstantTable()) {
 					if (debugPrints) {
-						cout << "Constant table: " << endl;
-						individualRef.getConstantTableRef().debugPrint();
+					#pragma omp critical
+						{
+							cout << "Constant table: " << endl;
+							individualRef.getConstantTableRef().debugPrint();
+						}
 					}
+
 					vector<double> constants = this->tuneConstants(individualRef, individualRef.getConstantTableRef().getTable(), dbMapPtr);
+
 					if (debugPrints) {
-						cout << "Constant table: " << endl;
-						individualRef.getConstantTableRef().debugPrint();
+					#pragma omp critical
+						{
+							cout << "Constant table: " << endl;
+							individualRef.getConstantTableRef().debugPrint();
+						}
 					}
-					population.at(i).getConstantTableRef().setTable(constants);
+
+					individualRef.getConstantTableRef().setTable(constants);
 				}
 				else {
-					population.at(i).createConstantTable();
+					individualRef.createConstantTable();
+
 					if (debugPrints) {
-						cout << "Constant table: " << endl;
-						individualRef.getConstantTableRef().debugPrint();
+					#pragma omp critical
+						{
+							cout << "Constant table: " << endl;
+							individualRef.getConstantTableRef().debugPrint();
+						}
 					}
-					vector<double> constants = this->tuneConstants(population.at(i), vector<double>(0), dbMapPtr);
+
+					vector<double> constants = this->tuneConstants(individualRef, vector<double>(0), dbMapPtr);
+
 					if (debugPrints) {
-						cout << "Constant table: " << endl;
-						individualRef.getConstantTableRef().debugPrint();
+					#pragma omp critical
+						{
+							cout << "Constant table: " << endl;
+							individualRef.getConstantTableRef().debugPrint();
+						}
 					}
-					population.at(i).getConstantTableRef().setTable(constants);
+
+					individualRef.getConstantTableRef().setTable(constants);
 				}
+
 				if (debugPrints) {
-					cout << "Individual n." << i + 1 << " after constant tuning" << endl << individualRef << endl;
+				#pragma omp critical
+					{
+						cout << "Individual n." << i + 1 << " after constant tuning" << endl << individualRef << endl;
+					}
 				}
 
-				double scoreAfter = fitness->evaluate(population.at(i), dbMapPtr, targetValues);
-				cout << "Before: " << scoreBefore << "; After: " << scoreAfter << endl;
-				accImp += min(100, -((scoreBefore + scoreAfter) / scoreBefore));
+				double scoreAfter = fitness->evaluate(individualRef, dbMapPtr, targetValues);
+
+				if (debugPrints) {
+					#pragma omp critical
+					{
+						cout << "Before: " << scoreBefore << "; After: " << scoreAfter << endl;
+					}
+				}
+
+				accImp += min(100.0, -((scoreBefore + scoreAfter) / scoreBefore));
 			}
+
+
+
+			
 		}
 
-		double acc = 0; double depthAcc = 0;
-		double maxFitness;
-		int bestIndividualIdx;
-		bool maxFitnessSet = false;
-		int infCnt = 0;
-		vector <double> fitnessValues = vector<double>(0);
-		for (int i = 0; i < this->population.getSize(); i++) {
-			Individual & current = population.at(i);
-			double score;
-			if (this->saveDbToMemory) {
-				score = fitness->evaluate(current, dbMapPtr, targetValues);
-			}
-			else{
-				score = fitness->evaluate(current, this->connection, this->dbName, this->tableName, this->target, this->primaryKey);
-			}
-			fitnessValues.push_back(score);
+		omp_set_num_threads(this->threadCnt);
 
-			if (!isinf(score)) {
-				acc += score;
-				depthAcc += current.getMaxDepth();
+		// Inicializace
+		double acc = 0;
+		double depthAcc = 0;
+		int infCnt = 0;
+
+		int bestIndividualIdx = -1;
+		double maxFitness = 0;
+		bool maxFitnessSet = false;
+
+		// Prealokujeme fitness hodnoty
+		vector<double> fitnessValues(this->population.getSize());
+
+		// Paralelní smyčka
+		#pragma omp parallel
+		{
+			// Lokální proměnné pro každý thread
+			double localAcc = 0;
+			double localDepthAcc = 0;
+			int localInfCnt = 0;
+
+			int localBestIdx = -1;
+			double localMaxFitness = 0;
+			bool localMaxSet = false;
+
+			#pragma omp for
+			for (int i = 0; i < this->population.getSize(); i++) {
+				Individual& current = population.at(i);
+				double score;
+
+				if (this->saveDbToMemory) {
+					score = fitness->evaluate(current, dbMapPtr, targetValues);  // ← musí být thread-safe!
+				}
+				else {
+					score = fitness->evaluate(current, this->connection, this->dbName, this->tableName, this->target, this->primaryKey);
+				}
+
+				fitnessValues[i] = score;
+
+				if (!isinf(score)) {
+					localAcc += score;
+					localDepthAcc += current.getMaxDepth();
+				}
+				else {
+					localInfCnt++;
+				}
+
+				if (localMaxSet) {
+					if (score > localMaxFitness) {
+						localMaxFitness = score;
+						localBestIdx = i;
+					}
+				}
+				else {
+					localMaxFitness = score;
+					localBestIdx = i;
+					localMaxSet = true;
+				}
 			}
-			else {
-				infCnt++;
-			}
-			
-			if (maxFitnessSet) {
-				if (score > maxFitness) {
-					bestIndividualIdx = i;
-					maxFitness = score;
-					if (maxFitness >= bestScore) {
-						bestScore = maxFitness;
-						bestOfBest = population.at(bestIndividualIdx);
+
+			// Redukce výsledků všech threadů
+			#pragma omp critical
+			{
+				acc += localAcc;
+				depthAcc += localDepthAcc;
+				infCnt += localInfCnt;
+
+				if (localMaxSet) {
+					if (!maxFitnessSet || localMaxFitness > maxFitness) {
+						maxFitness = localMaxFitness;
+						bestIndividualIdx = localBestIdx;
+						maxFitnessSet = true;
+
+						if (maxFitness >= bestScore) {
+							bestScore = maxFitness;
+							bestOfBest = population.at(bestIndividualIdx);
+						}
 					}
 				}
 			}
-			else{
-				bestIndividualIdx = i;
-				maxFitness = score;
-				maxFitnessSet = true;
-				if (maxFitness >= bestScore) {
-					bestScore = maxFitness;
-					bestOfBest = population.at(bestIndividualIdx);
-				}
-			}
 		}
+
 
 		if(debugPrints){
 			cout << "Average fitness: " << acc / (populationSize - infCnt) << endl;
@@ -200,43 +285,85 @@ void GeneticProgramming::standartRun(const int & maxGenerationNum, const int & s
 			break;
 		}
 
-		vector<Individual> newPopulation(0);
-		int newPopulationSize = 0;
-		while (newPopulationSize < populationSize) {
-			double seed1 = Random::randProb(); 
+		omp_set_num_threads(this->threadCnt);
+
+		// Předalokujeme nový vektor s cílovou velikostí
+		vector<Individual> newPopulation(populationSize);
+
+		// Použijeme paralelní for – každý thread vytvoří jednoho jedince
+		#pragma omp parallel for
+		for (int i = 0; i < populationSize; i++) {
+			cout << "Creating individual n." << i << endl;
 			Individual newIndividual;
-			
-			if (seed1 <= this->randomIndividualProb) { 
+			double seed1 = Random::randProb();  // musí být thread-safe!
+
+			if (seed1 <= this->randomIndividualProb) {
+				cout << "Creating random individual" << endl;
 				newIndividual = Individual::generateRandomTreeGrowMethod(startTreeDepth, this->functionSet, this->terminalSet);
+
 				if (debugPrints) {
+					#pragma omp critical
 					cout << "New individual created by random: " << endl << newIndividual << endl;
 				}
 			}
-			else{
+			else {
 				double seed2 = Random::randProb();
 				if (seed2 <= this->crossover_prob) {
-					Individual & parent1 = this->selection->selectIndividual(this->population, fitnessValues);
-					Individual & parent2 = this->selection->selectIndividual(this->population, fitnessValues);
+					cout << "Crossover start" << endl;
+					// Výběr rodičů – musí být thread-safe, nebo to obalit critical
+					Individual parent1, parent2;
+					parent1 = this->selection->selectIndividual(this->population, fitnessValues);
+					parent2 = this->selection->selectIndividual(this->population, fitnessValues);
+
 					newIndividual = this->crossover->createOffspring(parent1, parent2, this->maxTreeDepth);
+
 					if (debugPrints) {
-						cout << "New individual created by crossover: " << endl << "Parent1:" << endl << parent1 << endl 
-							<< "Parent2:" << parent2 << endl << "New Individual:" << endl << newIndividual << endl;
+					#pragma omp critical
+						{
+							cout << "New individual created by crossover: " << endl
+								<< "Parent1:" << endl << parent1 << endl
+								<< "Parent2:" << endl << parent2 << endl
+								<< "New Individual:" << endl << newIndividual << endl;
+						}
 					}
+					cout << "Crossover end" << endl;
 				}
 				else {
-					Individual & selected = this->selection->selectIndividual(this->population, fitnessValues);
+					cout << "Copying" << endl;
+					Individual selected;
+					{
+						selected = this->selection->selectIndividual(this->population, fitnessValues);
+					}
+
 					newIndividual = Individual(selected);
-					cout << "New individual created copying: " << endl << newIndividual << endl;
+
+					if (debugPrints) {
+					#pragma omp critical
+						{
+							cout << "New individual created copying: " << endl << newIndividual << endl;
+						}
+					}
 				}
 			}
 
+			// Mutace – může být critical, pokud není thread-safe
 			this->mutation->mutate(newIndividual, this->maxTreeDepth);
-			cout << "New individual after mutation:" << endl << newIndividual << endl;
-			newPopulation.push_back(newIndividual);
-			newPopulationSize++;
+
+			if (debugPrints) {
+			#pragma omp critical
+				cout << "New individual after mutation:" << endl << newIndividual << endl;
+			}
+
+			// Uložení na správnou pozici (už je přiděleno)
+			newPopulation[i] = newIndividual;
 		}
 
+
+		// Konec měření času
+		auto end = std::chrono::high_resolution_clock::now();
+		auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
 		this->population.setPopulation(newPopulation);
+		cout << "[DEBUG] Generation took " << duration << " ms with " << this->threadCnt << " threads." << endl;
 	}
 
 	if (debugPrints) {
@@ -348,6 +475,11 @@ void GeneticProgramming::setMaxDepth(const int& maxDepth)
 	this->maxTreeDepth = maxDepth;
 }
 
+void GeneticProgramming::setThreadCnt(const int& threadCnt)
+{
+	this->threadCnt = threadCnt;
+}
+
 vector<double> GeneticProgramming::tuneConstants(Individual& individual, vector<double> originalConstants, shared_ptr<map<int, map<string, double>>> dbTablePtr)
 {
 	int size = individual.getConstantTableRef().getSize();
@@ -400,12 +532,12 @@ shared_ptr<map<int, map<string, double>>> GeneticProgramming::createWindow(vecto
 		this->target, this->primaryKey);
 
 	if (primaryKeys.size() < this->windowHeight) {
-		cout << "V�t�� v��ka okna ne� po�et ��dk� v tabulce" << endl;
+		cout << "Větší výška okna než počet řádků v tabulce" << endl;
 		throw invalid_argument("");
 	}
 
 	if (colNames.size() < this->windowWidth) {
-		cout << "V�t�� ��rka okna ne� po�et sloupc� v tabulce" << endl;
+		cout << "Větší šírka okna než počet sloupců v tabulce" << endl;
 		throw invalid_argument("");
 	}
 

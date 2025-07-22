@@ -160,6 +160,11 @@ bool Individual::isInnerNodeAtIdx(const int& idx) const
 
 void Individual::replaceNodeWithSubTree(const Individual& subtree, const int& replacePointIdx, const int& replacePointDepth)
 {
+	cout << "Mutating this individual: " << endl;
+	cout << *this << endl;
+	cout << "Subtree:" << endl;
+	cout << subtree << endl;
+	cout << "replacePointIdx: " << replacePointIdx << endl;
 	this->eraseSubtree(replacePointIdx);
 
 	int newDepth = max(replacePointDepth + subtree.getMaxDepth() - 1, this->depth);
@@ -441,7 +446,6 @@ Individual::Individual()
 // Přepsané
 Individual::Individual(const Individual& original)
 {
-	cout << "Začátek copy konstruktoru pro " << this << " original: " << &original << endl;
 	lastNodeIdx = original.getLastNodeIdx();
 	nodeVec.reserve(lastNodeIdx);
 
@@ -461,13 +465,11 @@ Individual::Individual(const Individual& original)
 
 	this->constantTable = ConstantTable();
 	this->constantTableCreated = false;
-	cout << "Konec copy konstruktoru" << endl;
 }
 
 // Přepsáno
 Individual::Individual(const vector<int>& structure, const int& depth, const int& nodeCnt, const int& reserved, const int& lastNodeIdx, const FunctionSet& functionSet, const TerminalSet& terminalSet)
 {
-	cout << "Začátek konstruktoru pro " << this << endl;
 	this->nodeCnt = nodeCnt;
 	this->depth = depth;
 	this->reserved = reserved;
@@ -493,8 +495,6 @@ Individual::Individual(const vector<int>& structure, const int& depth, const int
 			throw std::runtime_error("Chyba ve struktuře stromu");
 		}
 	}
-	cout << "Last idx: " << this->lastNodeIdx << ", depth: " << this->depth << ", vec size: " << this->nodeVec.size() << endl;
-	cout << "Konec konstruktoru" << endl;
 }
 
 // Přepsáno
@@ -572,7 +572,6 @@ int Individual::pickRandomNodeIdx() const
 			break;
 		}
 	}
-	cout << seed << endl;
 	return seed;
 }
 
@@ -592,7 +591,6 @@ int Individual::pickRandomLeafIdx() const
 			}
 		}
 	}
-	cout << seed << endl;
 	return seed;
 }
 
@@ -621,7 +619,6 @@ int Individual::pickRandomInnerNodeIdx() const
 // Přepsáno
 Individual Individual::generateRandomTreeGrowMethod(const int& depth, const FunctionSet& functionSet, const TerminalSet& terminalSet)
 {
-	cout << "grow method start" << endl;
 	if (depth < 1) {
 		throw invalid_argument("Depth has to be greater than 0");
 	}
@@ -663,7 +660,6 @@ Individual Individual::generateRandomTreeGrowMethod(const int& depth, const Func
 		}
 
 		// Struktura je naplněná, jde se tvořit strom
-		cout << "grow method end ,lastidx: " << lastIdx << endl;
 		return Individual(structure, treeDepth, nodeCnt, pow(2, depth) - 1, lastIdx, functionSet, terminalSet);
 	}
 }
@@ -671,7 +667,6 @@ Individual Individual::generateRandomTreeGrowMethod(const int& depth, const Func
 // Přepsáno
 Individual Individual::generateRandomTreeFullMethod(const int& depth, const FunctionSet& functionSet, const TerminalSet& terminalSet)
 {
-	cout << "full method start" << endl;
 	if (depth < 1) {
 		throw invalid_argument("Depth has to be greater than 0");
 		exit(1);
@@ -690,69 +685,86 @@ Individual Individual::generateRandomTreeFullMethod(const int& depth, const Func
 			structure.push_back(2);
 		}
 
-		cout << "full method end" << endl;
 		return Individual(structure, depth, nodeCnt, nodeCnt, lastIdx, functionSet, terminalSet);
 	}
 }
 
-/*
 Individual Individual::generateRandomTreePCT1(int maxDepth, double expectedSize, const FunctionSet& funcSet, const TerminalSet& termSet, const std::map<std::string, double>& probabilityMap)
 {
-		if (maxDepth < 1 || expectedSize < 1.0) {
-			throw invalid_argument("maxDepth and expectedSize must be positive.");
+	if (maxDepth < 1 || expectedSize < 1.0) {
+		throw std::invalid_argument("maxDepth and expectedSize must be positive.");
+	}
+
+	// Přepočet pravděpodobnosti výběru funkce
+	const auto& functions = funcSet.getFunctions();
+	double b = 0.0;
+	std::vector<double> funcProbs;
+
+	for (const auto& func : functions) {
+		double prob = probabilityMap.at(func.getName());
+		funcProbs.push_back(prob);
+		b += prob * func.getParity();
+	}
+
+	double p = 1.0 - (1.0 / (expectedSize * b));
+	if (p < 0.0) p = 0.0;
+	else if (p > 1.0) p = 1.0;
+
+	std::vector<std::unique_ptr<Node>> nodeVec;
+	std::function<void(int, int)> ptc1Rec;
+
+	ptc1Rec = [&](int idx, int depth) {
+		if (idx >= static_cast<int>(nodeVec.size()))
+			nodeVec.resize(idx + 1);
+
+		if (depth >= maxDepth) {
+			Terminal term = termSet.getRandomTerminal();
+			nodeVec[idx] = std::make_unique<TerminalNode>(term);
+			return;
 		}
 
-		// Přepočet pravděpodobnosti výběru funkce
-		const auto& functions = funcSet.getFunctions();
-		double b = 0.0; // očekávaný počet potomků
-		std::vector<double> funcProbs;
+		if (Random::randProb() <= p) {
+			Function f = funcSet.getRandomFunction(probabilityMap);
+			nodeVec[idx] = std::make_unique<FunctionNode>(f);
 
-		for (const auto& func : functions) {
-			double p = probabilityMap.at(func.getName());
-			funcProbs.push_back(p);
-			b += p * func.getParity();
-		}
+			bool leftDone = false;
+			bool rightDone = false;
 
-		double p = 1.0 - (1.0 / (expectedSize * b));  // pravděpodobnost výběru funkce
-		p = std::clamp(p, 0.0, 1.0);
+			int leftIdx = 2 * idx + 1;
+			int rightIdx = 2 * idx + 2;
 
-		std::vector<std::unique_ptr<Node>> nodeVec;
-		int currentIdx = 0;
-		std::function<void(int, int)> ptc1Rec;
-
-		ptc1Rec = [&](int idx, int depth) {
-			if (idx >= (int)nodeVec.size()) nodeVec.resize(idx + 1);
-
-			if (depth >= maxDepth) {
-				Terminal term = termSet.getRandomTerminal();
-				nodeVec[idx] = std::make_unique<Node>(TerminalNode(term));
-				return;
+			if (Random::randProb() <= 0.5) {
+				ptc1Rec(leftIdx, depth + 1);
+				leftDone = true;
+			}
+			if (Random::randProb() <= 0.5) {
+				ptc1Rec(rightIdx, depth + 1);
+				rightDone = true;
 			}
 
-			if (Random::randProb() <= p) {
-				// Vygeneruj funkční uzel
-				Function f = funcSet.getRandomFunction(probabilityMap);
-				nodeVec[idx] = std::make_unique<Node>(FunctionNode(f));
-				for (int i = 0; i < f.getParity(); i++) {
-					int childIdx = (idx + 1) * 2 - 1 + i;
-					ptc1Rec(childIdx, depth + 1);
+			// Zaručíme, že alespoň jeden potomek bude vytvořen
+			if (!leftDone && !rightDone) {
+				if (Random::randProb() <= 0.5) {
+					ptc1Rec(leftIdx, depth + 1);
+				}
+				else {
+					ptc1Rec(rightIdx, depth + 1);
 				}
 			}
-			else {
-				// Terminál
-				Terminal term = termSet.getRandomTerminal();
-				nodeVec[idx] = std::make_unique<Node>(TerminalNode(term));
-			}
-			};
+		}
+		else {
+			Terminal term = termSet.getRandomTerminal();
+			nodeVec[idx] = std::make_unique<TerminalNode>(term);
+		}
+		};
 
-		ptc1Rec(0, 1);
+	ptc1Rec(0, 1);
 
-		// Sestav strom
-		Individual result;
-		result.setNodeVec(std::move(nodeVec));
-		result.updateStats();
-		return result;
-}*/
+	Individual result;
+	result.setNodeVec(std::move(nodeVec));
+	result.updateStats();
+	return result;
+}
 
 // Přepsáno
 double Individual::evaluate(shared_ptr<Connection>& conn, string dbName, string tableName, const int& rowIdx) const
@@ -1030,4 +1042,56 @@ Individual Individual::extractSubtree(const int& idx) const
 	result.constantTableCreated = false;
 
 	return result;
+}
+
+void Individual::setNodeVec(std::vector<std::unique_ptr<Node>>&& newVec)
+{
+	this->nodeVec = std::move(newVec); // nutné pro přesun vlastnictví
+}
+
+int Individual::predictOffspringDepthAfterSubtreeReplace(int replaceIdx, int replaceNodeDepth, int subtreeDepth) const
+{
+	// 1. Urči indexy všech uzlů v podstromu, který bude odstraněn
+	std::vector<bool> marked(this->nodeVec.size(), false);
+	std::queue<int> toVisit;
+	toVisit.push(replaceIdx);
+	marked[replaceIdx] = true;
+
+	while (!toVisit.empty()) {
+		int idx = toVisit.front();
+		toVisit.pop();
+
+		if (idx >= (int)this->nodeVec.size() || this->nodeVec[idx] == nullptr)
+			continue;
+
+		int left = Individual::getLeftChildIdx(idx);
+		int right = Individual::getLeftChildIdx(idx) + 1;
+
+		if (left < (int)this->nodeVec.size()) {
+			toVisit.push(left);
+			marked[left] = true;
+		}
+
+		if (right < (int)this->nodeVec.size()) {
+			toVisit.push(right);
+			marked[right] = true;
+		}
+	}
+
+	// 2. Projdi zbývající uzly a zjisti jejich maximální hloubku
+	int maxDepthOutside = 0;
+	for (int i = 0; i < (int)this->nodeVec.size(); i++) {
+		if (!marked[i] && this->nodeVec[i] != nullptr) {
+			int depth = Individual::calculateDepthFromIdx(i);
+			if (depth > maxDepthOutside) {
+				maxDepthOutside = depth;
+			}
+		}
+	}
+
+	// 3. Spočítej hloubku nové větve po náhradě
+	int newSubtreeDepth = replaceNodeDepth + subtreeDepth - 1;
+
+	// 4. Výsledek je maximum
+	return max(maxDepthOutside, newSubtreeDepth);
 }

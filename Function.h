@@ -34,6 +34,7 @@ public:
 	static FunctionSet createArithmeticFunctionSetNoDivide();
 
 	Function getRandomFunction() const;
+	Function getRandomFunction(const map<std::string, double>& probabilityMap) const;
 	const std::vector<Function>& getFunctions() const;
 
 	std::vector<int> prepareFunctionIndexPool(const std::map<std::string, double>& functionProbabilities) const;
