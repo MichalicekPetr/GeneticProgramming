@@ -766,6 +766,81 @@ Individual Individual::generateRandomTreePCT1(int maxDepth, double expectedSize,
 	return result;
 }
 
+Individual Individual::generateRandomTreePCT2(int maxDepth, int maxSizeconst, vector<double>& sizeDistribution, const FunctionSet& funcSet, const TerminalSet& termSet, const map<string, double>& probabilityMap)
+{
+
+	// 1. Vyber požadovanou velikost stromu podle distribuce
+	double r = Random::randProb();
+	int targetSize = 1;
+	double cumulative = 0.0;
+	for (int i = 0; i < sizeDistribution.size(); i++) {
+		cumulative += sizeDistribution[i];
+		if (r <= cumulative) {
+			targetSize = i + 1;
+			break;
+		}
+	}
+
+	// 2. Počáteční kořen
+	vector<unique_ptr<Node>> nodeVec;
+	queue<pair<int, int> > boundary; // {index, depth}
+	int nodeCount = 0;
+
+	Function rootFunc = funcSet.getRandomFunction(probabilityMap);
+	nodeVec.push_back(make_unique<FunctionNode>(rootFunc));
+	nodeCount++;
+
+	// Zadej boundary pozice pro děti kořene
+	for (int i = 0; i < rootFunc.getParity(); i++) {
+		int childIdx = 2 * 0 + 1 + i;
+		boundary.push(make_pair(childIdx, 2));
+	}
+
+	// 3. Dokud lze přidávat funkce (v závislosti na velikosti a hloubce)
+	while (!boundary.empty() && nodeCount < targetSize) {
+		pair<int, int> front = boundary.front();
+		boundary.pop();
+		int idx = front.first;
+		int depth = front.second;
+
+		if (depth >= maxDepth) {
+			Terminal t = termSet.getRandomTerminal();
+			if (idx >= (int)nodeVec.size()) nodeVec.resize(idx + 1);
+			nodeVec[idx] = make_unique<TerminalNode>(t);
+			continue;
+		}
+
+		if (nodeCount + 1 >= targetSize) break;
+
+		Function f = funcSet.getRandomFunction(probabilityMap);
+		if (idx >= (int)nodeVec.size()) nodeVec.resize(idx + 1);
+		nodeVec[idx] = make_unique<FunctionNode>(f);
+		nodeCount++;
+
+		for (int i = 0; i < f.getParity(); i++) {
+			int childIdx = 2 * idx + 1 + i;
+			boundary.push(make_pair(childIdx, depth + 1));
+		}
+	}
+
+	// 4. Zbytek boundary vyplň terminály
+	while (!boundary.empty()) {
+		pair<int, int> front = boundary.front();
+		boundary.pop();
+		int idx = front.first;
+		int depth = front.second;
+
+		Terminal t = termSet.getRandomTerminal();
+		if (idx >= (int)nodeVec.size()) nodeVec.resize(idx + 1);
+		nodeVec[idx] = make_unique<TerminalNode>(t);
+	}
+
+	Individual result;
+	result.setNodeVec(move(nodeVec));
+	result.updateStats();
+	return result;
+}
+
 // Přepsáno
 double Individual::evaluate(shared_ptr<Connection>& conn, string dbName, string tableName, const int& rowIdx) const
 {
