@@ -28,6 +28,7 @@ private:
 
 public:
 	MysqlConnection();
+	MysqlConnection(const MysqlConnection& other);
 	void connectToDb(string url, string user, string password, string dbName, int port) override;
 	vector<string> getColNames(string db, string table) const override;
 	vector<string> getColNamesWithoutTargetAndPrimaryKey(string db, string table, string target, string primaryKey) const override;

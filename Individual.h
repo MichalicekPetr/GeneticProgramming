@@ -1,3 +1,4 @@
+
 #pragma once
 
 #include <array>
@@ -44,8 +45,8 @@ public:
 	static Individual generateRandomTreeGrowMethod(const int& depth, const FunctionSet& functionSet, const TerminalSet& terminalSet);
 	static Individual generateRandomTreeFullMethod(const int& depth, const FunctionSet& functionSet, const TerminalSet& terminalSet);
 	static Individual generateRandomTreePCT1(int maxDepth, double expectedSize, const FunctionSet& funcSet, const TerminalSet& termSet, const std::map<std::string, double>& probabilityMap);
-	static Individual generateRandomTreePCT2(int maxDepth, int maxSizeconst, vector<double>& sizeDistribution, const FunctionSet& funcSet, const TerminalSet& termSet, const map<string, double>& probabilityMap);
-		
+	static Individual generateRandomTreePCT2(int maxDepth, vector<double>& sizeDistribution, const FunctionSet& funcSet, const TerminalSet& termSet, const map<string, double>& probabilityMap);
+
 	static int getParentIdx(const int& idx);
 	static int getLeftChildIdx(const int& idx);
 	static int calculateDepthFromIdx(const int& idx);
@@ -78,9 +79,9 @@ public:
 	bool isLeafAtIdx(const int& idx) const;
 	bool isInnerNodeAtIdx(const int& idx) const;
 
-	void replaceNodeWithSubTree(const Individual& subtree, const int& replacePointIdx, const int &replacePointDepth);
+	void replaceNodeWithSubTree(const Individual& subtree, const int& replacePointIdx, const int& replacePointDepth);
 	Individual extractSubtree(const int& idx) const;
-	
+
 	void setNodeVec(vector<unique_ptr<Node>>&& newVec);
 	int predictOffspringDepthAfterSubtreeReplace(int replaceIdx, int replaceNodeDepth, int subtreeDepth) const;
 

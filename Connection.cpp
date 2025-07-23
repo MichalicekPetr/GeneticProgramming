@@ -12,6 +12,12 @@ MysqlConnection::MysqlConnection()
 	this->connectedToDb = false;
 }
 
+MysqlConnection::MysqlConnection(const MysqlConnection& other)
+{
+	this->conn = mysql_init(0);
+	this->connectedToDb = false;
+}
+
 void MysqlConnection::connectToDb(string url, string user, string password, string dbName, int port)
 {
 	cout << this->conn->status << endl;

@@ -41,7 +41,7 @@ void Individual::fillLayersVector(vector<vector<string>>& layers, vector<int>& m
 		}
 		layers.at(currentDepth - 1).push_back(nodeStr);
 
-		remaining --;
+		remaining--;
 		if (remaining == 0) {
 			currentDepth++;
 			remaining = pow(2, currentDepth - 1);
@@ -49,7 +49,7 @@ void Individual::fillLayersVector(vector<vector<string>>& layers, vector<int>& m
 		}
 
 	}
-	
+
 	if (!newDepth) {
 		for (int i = 0; i < remaining; i++) {
 			layers.at(currentDepth - 1).push_back("");
@@ -315,7 +315,7 @@ string Individual::createBranchLineVertical(const int& depth, const int& element
 	int lastPartLen = (int)((elementSize - 1) / 2);
 	if (((elementSize - 1) % 2) == 1) {
 		lastPartLen += 1;
-	} 
+	}
 	line.append(firstPartLen, ' ');
 
 	int elementCnt = (int)pow(2, depth) - 1;
@@ -452,7 +452,7 @@ Individual::Individual(const Individual& original)
 	for (int i = 0; i <= lastNodeIdx; i++) {
 		const Node* originalNode = original.nodeVec.at(i).get();
 		if (originalNode) {
-			nodeVec.push_back(originalNode->clone());  
+			nodeVec.push_back(originalNode->clone());
 		}
 		else {
 			nodeVec.push_back(nullptr);
@@ -766,7 +766,7 @@ Individual Individual::generateRandomTreePCT1(int maxDepth, double expectedSize,
 	return result;
 }
 
-Individual Individual::generateRandomTreePCT2(int maxDepth, int maxSizeconst, vector<double>& sizeDistribution, const FunctionSet& funcSet, const TerminalSet& termSet, const map<string, double>& probabilityMap)
+Individual Individual::generateRandomTreePCT2(int maxDepth, vector<double>& sizeDistribution, const FunctionSet& funcSet, const TerminalSet& termSet, const map<string, double>& probabilityMap)
 {
 
 	// 1. Vyber požadovanou velikost stromu podle distribuce
@@ -853,7 +853,7 @@ double Individual::evaluate(const map<string, double>& rowMap) const
 {
 	this->assignValueToDataPoints(rowMap);
 	return this->evaluateRec(0);
-	 
+
 }
 
 // Přepsáno

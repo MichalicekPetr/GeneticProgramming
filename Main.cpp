@@ -12,6 +12,7 @@
 #include "DatabaseScripts.h"
 #include "Fitness.h"
 #include "Function.h"
+#include "HelperFunc.h"
 #include "GeneticProgramming.h"
 #include "Individual.h"
 #include "Mutation.h"
@@ -46,6 +47,10 @@ void tuneHyperParamatersGP() {
 
                         GeneticProgramming geneticProgramming = GeneticProgramming();
 
+                        
+                        int threadCnt = 3;
+                        geneticProgramming.setThreadCnt(threadCnt);
+
                         int popSize = 200;
                         geneticProgramming.setPopulation(Population(popSize, unique_ptr<PopulationInitMethod>(new RandomHalfFullHalfGrowInitialization())));
 
@@ -69,7 +74,6 @@ void tuneHyperParamatersGP() {
                         string tableName = "table_c";
                         string primaryKey = "idx";
                         bool saveDbToMemory = true;
-                        geneticProgramming.setDbThings(shared_ptr<Connection>(new MysqlConnection()), dbName, tableName, primaryKey, saveDbToMemory);
 
                         string target = "y";
                         geneticProgramming.setTarget(target);
@@ -79,6 +83,11 @@ void tuneHyperParamatersGP() {
                         string password = "krtek";
                         int port = 3306;
                         geneticProgramming.setLoginParams(url, user, password, port);
+                        geneticProgramming.initConnections(
+                            shared_ptr<Connection>(new MysqlConnection()),
+                            threadCnt, // nebo zadejte konkrétní počet vláken, např. 1
+                            dbName, tableName, primaryKey, saveDbToMemory
+                        );
 
                         double randomIndividualProb = x5;
                         geneticProgramming.setRandomIndividualProb(randomIndividualProb);
@@ -130,7 +139,7 @@ void tuneHyperParametersGAGP(){
 
 int main()
 {
-
+    mysql_library_init(0, nullptr, nullptr);
 
     try {
         cout << "Starting program\n" << endl;
@@ -194,9 +203,10 @@ int main()
             "3 for genetic programming with window\n"
             "4 for show table create script\n"
             "5 for show row insert script\n"
-            "6 for hyperparam tuning\n" 
-            "7 for array representation test\n" 
-            "8 for PCT1 algorithm test\n" << endl;
+            "6 for hyperparam tuning\n"
+            "7 for array representation test\n"
+            "8 for PCT1 algorithm test\n"
+            "9 for PCT2 algorithm test\n" << endl;
         int choice;
         cin >> choice;
 
@@ -220,6 +230,9 @@ int main()
             geneticProgramming.setFunctionSet(funcSet);
             geneticProgramming.setTerminalSet(termSet);
 
+            int threadCnt = 3;
+            geneticProgramming.setThreadCnt(threadCnt);
+
             double subtreeMutProb = 0.05;
             double replaceNodeMutProb = 0.01;
             geneticProgramming.setMutation(unique_ptr<Mutation>(new CombinedMutation(subtreeMutProb, replaceNodeMutProb, funcSet, termSet)));
@@ -237,7 +250,6 @@ int main()
             string tableName = "testdb1";
             string primaryKey = "idx";
             bool saveDbToMemory = true;
-            geneticProgramming.setDbThings(shared_ptr<Connection>(new MysqlConnection()), dbName, tableName, primaryKey, saveDbToMemory);
 
             string target = "y";
             geneticProgramming.setTarget(target);
@@ -247,6 +259,11 @@ int main()
             string password = "krtek";
             int port = 3306;
             geneticProgramming.setLoginParams(url, user, password, port);
+            geneticProgramming.initConnections(
+                shared_ptr<Connection>(new MysqlConnection()),
+                threadCnt, // nebo zadejte konkrétní počet vláken, např. 1
+                dbName, tableName, primaryKey, saveDbToMemory
+            );
 
             double randomIndividualProb = 0.02;
             geneticProgramming.setRandomIndividualProb(randomIndividualProb);
@@ -290,8 +307,12 @@ int main()
             int popSize = 100;
             geneticProgramming.setPopulation(Population(popSize, unique_ptr<PopulationInitMethod>(new RandomHalfFullHalfGrowInitialization())));
 
+
             geneticProgramming.setFunctionSet(funcSet);
             geneticProgramming.setTerminalSet(termSet);
+
+            int threadCnt = 3;
+            geneticProgramming.setThreadCnt(threadCnt);
 
             double subtreeMutProb = 0.06;
             double replaceNodeMutProb = 0.03;
@@ -310,7 +331,6 @@ int main()
             string tableName = "testdb1";
             string primaryKey = "idx";
             bool saveDbToMemory = true;
-            geneticProgramming.setDbThings(shared_ptr<Connection>(new MysqlConnection()), dbName, tableName, primaryKey, saveDbToMemory);
 
             string target = "y";
             geneticProgramming.setTarget(target);
@@ -320,6 +340,11 @@ int main()
             string password = "krtek";
             int port = 3306;
             geneticProgramming.setLoginParams(url, user, password, port);
+            geneticProgramming.initConnections(
+                shared_ptr<Connection>(new MysqlConnection()),
+                threadCnt, // nebo zadejte konkrétní počet vláken, např. 1
+                dbName, tableName, primaryKey, saveDbToMemory
+            );
 
             double randomIndividualProb = 0.04;
             geneticProgramming.setRandomIndividualProb(randomIndividualProb);
@@ -365,6 +390,9 @@ int main()
             int popSize = 200;
             geneticProgramming.setPopulation(Population(popSize, unique_ptr<PopulationInitMethod>(new RandomHalfFullHalfGrowInitialization())));
 
+            int threadCnt = 3;
+            geneticProgramming.setThreadCnt(threadCnt);
+
             geneticProgramming.setFunctionSet(funcSet);
             geneticProgramming.setTerminalSet(termSet);
 
@@ -385,7 +413,6 @@ int main()
             string tableName = "table_c";
             string primaryKey = "idx";
             bool saveDbToMemory = true;
-            geneticProgramming.setDbThings(shared_ptr<Connection>(new MysqlConnection()), dbName, tableName, primaryKey, saveDbToMemory);
 
             string target = "y";
             geneticProgramming.setTarget(target);
@@ -395,6 +422,11 @@ int main()
             string password = "krtek";
             int port = 3306;
             geneticProgramming.setLoginParams(url, user, password, port);
+            geneticProgramming.initConnections(
+                shared_ptr<Connection>(new MysqlConnection()),
+                threadCnt, // nebo zadejte konkrétní počet vláken, např. 1
+                dbName, tableName, primaryKey, saveDbToMemory
+            );
 
             double randomIndividualProb = 0.02;
             geneticProgramming.setRandomIndividualProb(randomIndividualProb);
@@ -438,12 +470,17 @@ int main()
             vector<string> colNames = connection.getColNames("testschema", "testdb1");
             colNames.erase(std::remove(colNames.begin(), colNames.end(), "y"), colNames.end());
 
+
+     
+
             FunctionSet funcSet = FunctionSet::createArithmeticFunctionSet();
             TerminalSet termSet = TerminalSet(-5, 5, false, colNames);
 
             GeneticProgramming geneticProgramming = GeneticProgramming();
+			int threadCnt = 3;
+            geneticProgramming.setThreadCnt(threadCnt);
 
-            int popSize = 40;
+            int popSize = 50;
             geneticProgramming.setPopulation(Population(popSize, unique_ptr<PopulationInitMethod>(new RandomHalfFullHalfGrowInitialization())));
 
             geneticProgramming.setFunctionSet(funcSet);
@@ -466,7 +503,7 @@ int main()
             string tableName = "testdb1";
             string primaryKey = "idx";
             bool saveDbToMemory = true;
-            geneticProgramming.setDbThings(shared_ptr<Connection>(new MysqlConnection()), dbName, tableName, primaryKey, saveDbToMemory);
+
 
             string target = "y";
             geneticProgramming.setTarget(target);
@@ -477,11 +514,17 @@ int main()
             int port = 3306;
             geneticProgramming.setLoginParams(url, user, password, port);
 
+            geneticProgramming.initConnections(
+                shared_ptr<Connection>(new MysqlConnection()),
+                threadCnt, // nebo zadejte konkrétní počet vláken, např. 1
+                dbName, tableName, primaryKey, saveDbToMemory
+            );
+
             double randomIndividualProb = 0.04;
             geneticProgramming.setRandomIndividualProb(randomIndividualProb);
 
-            bool constantTuning = false;
-            double constantTuningMaxTime = 0.5 ;
+            bool constantTuning = true;
+            double constantTuningMaxTime = 0.3 ;
             geneticProgramming.setTuneConstants(constantTuning, constantTuningMaxTime);
 
             double vectorGA_crossoverProb = 0.7;
@@ -504,7 +547,6 @@ int main()
             geneticProgramming.setWindowParams(useWindow, windowHeight, windowWidth);
 
             geneticProgramming.setMaxDepth(5);
-            geneticProgramming.setThreadCnt(3);
 
             geneticProgramming.standartRun(3, 3, false);
         }
@@ -565,6 +607,25 @@ int main()
             test = Individual::generateRandomTreePCT1(4, 12, funcSet, termSet, pmap);
             cout << test << endl;
         }
+        else if (choice == 9) {
+            MysqlConnection connection;
+            connection.connectToDb("localhost", "root", "krtek", "testschema", 3306);
+            vector<string> colNames = connection.getColNames("testschema", "testdb1");
+            colNames.erase(std::remove(colNames.begin(), colNames.end(), "y"), colNames.end());
+            FunctionSet funcSet = FunctionSet::createArithmeticFunctionSet();
+            TerminalSet termSet = TerminalSet(-5, 5, false, colNames);
+
+            map<string, double> pmap = {
+                {"+", 0.3}, {"*", 0.3}, {"-", 0.1}, {"%", 0.05}, {"neg", 0.2}, {"inv", 0.05}
+            };
+            Individual test;
+            vector<double> sizeDistribution = HelperFunc::generateNormalSizeDistribution(15);
+            for (int i = 0; i < 10; i++) {
+                cout << "Iteration: " << i << endl;
+                test = Individual::generateRandomTreePCT2(4, sizeDistribution, funcSet, termSet, pmap);
+                cout << test << endl;
+            }
+        }
         else {
             MysqlConnection connection;
             connection.connectToDb("localhost", "root", "krtek", "testschema", 3306);
@@ -584,4 +645,5 @@ int main()
     catch (exception e) {
         cout << "Exception: " << e.what() << endl;
     }
+    mysql_library_end();
 }

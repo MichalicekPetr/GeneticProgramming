@@ -28,7 +28,7 @@ private:
 
 	unique_ptr<FitnessFunction> fitnessFunc;
 
-	shared_ptr<Connection> connection;
+	vector<shared_ptr<Connection>> connections;
 	string dbName;
 	string tableName;
 	string target;
@@ -75,7 +75,7 @@ public:
 	void setSelection(unique_ptr<Selection> selection);
 	void setCrossover(unique_ptr<Crossover> crossover, const double & crossoverProb);
 	void setFitness(unique_ptr<FitnessFunction> fitnessFunc);
-	void setDbThings(shared_ptr<Connection> conn, string dbName, string tableName, string primaryKey, bool saveDbToMemory);
+	void initConnections(std::shared_ptr<Connection> prototype, int threadCount, std::string dbName, std::string tableName, std::string primaryKey, bool saveDbToMemory);
 	void setTarget(string target);
 	void setLoginParams(string url, string user, string password, int port);
 	void setRandomIndividualProb(const double& prob);
@@ -94,6 +94,8 @@ public:
 	shared_ptr<map<int, map<string, double>>> createWindow(vector<pair<int, double>> & targetValues);
 
 	string createFileName() const;
+
+	shared_ptr<Connection> getConnectionForThread(int threadIdx);
 };
 
 
