@@ -160,11 +160,6 @@ bool Individual::isInnerNodeAtIdx(const int& idx) const
 
 void Individual::replaceNodeWithSubTree(const Individual& subtree, const int& replacePointIdx, const int& replacePointDepth)
 {
-	cout << "Mutating this individual: " << endl;
-	cout << *this << endl;
-	cout << "Subtree:" << endl;
-	cout << subtree << endl;
-	cout << "replacePointIdx: " << replacePointIdx << endl;
 	this->eraseSubtree(replacePointIdx);
 
 	int newDepth = max(replacePointDepth + subtree.getMaxDepth() - 1, this->depth);
@@ -1169,4 +1164,68 @@ int Individual::predictOffspringDepthAfterSubtreeReplace(int replaceIdx, int rep
 
 	// 4. Výsledek je maximum
 	return max(maxDepthOutside, newSubtreeDepth);
+}
+
+void Individual::optimizeSelf(const bool& mergeConstants, const bool& removeUselessBranches, const bool& DAG)
+{
+	if (mergeConstants) {
+		this->mergeConstants();
+	}
+	if (removeUselessBranches) {
+		this->removeUselessBranches();
+	}
+	if (DAG) {
+		this->createDAG();
+	}
+}
+
+void Individual::mergeConstants()
+{
+	for (int i = 0; i <= this->lastNodeIdx; ++i) {
+		Node* node = this->nodeVec.at(i).get();
+		if (!node || !node->isFunctionNode())
+			continue;
+
+		int leftIdx = Individual::getLeftChildIdx(i);
+		int rightIdx = leftIdx + 1;
+
+		// Ověření existence potomků
+		if (leftIdx > this->lastNodeIdx || rightIdx > this->lastNodeIdx)
+			continue;
+		Node* leftNode = this->nodeVec.at(leftIdx).get();
+		Node* rightNode = this->nodeVec.at(rightIdx).get();
+		if (!leftNode || !rightNode)
+			continue;
+
+		// Ověření, že oba potomci jsou konstantní TerminalNode
+		TerminalNode* leftTerm = dynamic_cast<TerminalNode*>(leftNode);
+		TerminalNode* rightTerm = dynamic_cast<TerminalNode*>(rightNode);
+		if (!leftTerm || !rightTerm)
+			continue;
+		if (!leftTerm->isConstant() || !rightTerm->isConstant())
+			continue;
+
+		// Spočítání výsledku funkce
+		FunctionNode* funcNode = dynamic_cast<FunctionNode*>(node);
+		double result = funcNode->evaluateFunction(leftTerm->getValue(), rightTerm->getValue(), true, true);
+
+		// Vytvoření nového TerminalNode s výsledkem
+		Terminal newTerm(result);
+		std::unique_ptr<Node> newTermNode = std::make_unique<TerminalNode>(newTerm);
+		this->nodeVec.at(i) = std::move(newTermNode);
+
+		// Smazání potomků
+		this->nodeVec.at(leftIdx) = nullptr;
+		this->nodeVec.at(rightIdx) = nullptr;
+	}
+
+	this->updateStats();
+}
+
+void Individual::removeUselessBranches()
+{
+}
+
+void Individual::createDAG()
+{
 }

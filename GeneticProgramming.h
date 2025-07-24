@@ -63,6 +63,10 @@ private:
 	int maxTreeDepth;
 	int threadCnt;
 
+	bool mergeConstantOptimalization;
+	bool removeUselessBranchesOptimalization;
+	bool DAGOptimalization;
+
 public:
 	GeneticProgramming();
 	
@@ -86,6 +90,7 @@ public:
 	void setWindowParams(bool useWindow, int windowHeight, int windowWidth);
 	void setMaxDepth(const int& maxDepth);
 	void setThreadCnt(const int& threadCnt);
+	void setOptimalizationParams(bool mergeConstantOptimalization, bool removeUselessBranchesOptimalization, bool DAGOptimalization);
 
 	vector<double> tuneConstants(Individual & individual, vector<double> originalConstants, shared_ptr<map<int, map<string, double>>> dbTablePtr = nullptr);
 

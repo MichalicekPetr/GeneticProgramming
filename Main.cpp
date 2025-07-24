@@ -477,7 +477,7 @@ int main()
             TerminalSet termSet = TerminalSet(-5, 5, false, colNames);
 
             GeneticProgramming geneticProgramming = GeneticProgramming();
-			int threadCnt = 3;
+			int threadCnt = 4;
             geneticProgramming.setThreadCnt(threadCnt);
 
             int popSize = 50;
@@ -486,11 +486,11 @@ int main()
             geneticProgramming.setFunctionSet(funcSet);
             geneticProgramming.setTerminalSet(termSet);
 
-            double subtreeMutProb = 1;
-            double replaceNodeMutProb = 0.03;
+            double subtreeMutProb = 0.05;
+            double replaceNodeMutProb = 0.01;
             geneticProgramming.setMutation(unique_ptr<Mutation>(new CombinedMutation(replaceNodeMutProb, subtreeMutProb, funcSet, termSet)));
 
-            int tournamentSize = 2;
+            int tournamentSize = 3;
             geneticProgramming.setSelection(unique_ptr<Selection>(new TournamentSelection(tournamentSize)));
 
             double crossoverProb = 0.7;
@@ -524,7 +524,7 @@ int main()
             geneticProgramming.setRandomIndividualProb(randomIndividualProb);
 
             bool constantTuning = true;
-            double constantTuningMaxTime = 0.3 ;
+            double constantTuningMaxTime = 0.5 ;
             geneticProgramming.setTuneConstants(constantTuning, constantTuningMaxTime);
 
             double vectorGA_crossoverProb = 0.7;
@@ -546,9 +546,14 @@ int main()
             int windowWidth = 10;
             geneticProgramming.setWindowParams(useWindow, windowHeight, windowWidth);
 
-            geneticProgramming.setMaxDepth(5);
+            geneticProgramming.setMaxDepth(7);
 
-            geneticProgramming.standartRun(3, 3, false);
+			bool mergeConstantOptimalization = true;
+			bool removeUselessBranchesOptimalization = false;
+			bool DAGOptimalization = false;
+			geneticProgramming.setOptimalizationParams(mergeConstantOptimalization, removeUselessBranchesOptimalization, DAGOptimalization);
+
+            geneticProgramming.standartRun(1000, 4, false);
         }
         else if (choice == 8) {
             MysqlConnection connection;

@@ -21,7 +21,6 @@ SubtreeMutation::SubtreeMutation(const double& mutationProb, const FunctionSet& 
 
 void SubtreeMutation::mutate(Individual& individual, const int& maxDepth)
 {
-	cout << "Subtree mutation start" << endl;
 	double seed = Random::randProb();
 	if (seed <= this->mutationProb) {
 		int mutNodeIdx = individual.pickRandomNodeIdx();
@@ -29,7 +28,6 @@ void SubtreeMutation::mutate(Individual& individual, const int& maxDepth)
 		int treeDepth = individual.getMaxDepth();
 
 		int newDepthUpperbound = max(1, min(treeDepth + 3 - mutNodeDepth, maxDepth - mutNodeDepth));
-		cout << "maxDepth - mutNodeDepth" << maxDepth - mutNodeDepth << endl;
 		int newDepth = Random::randInt(1, newDepthUpperbound	);
 
 		double seed2 = Random::randProb();
@@ -39,15 +37,12 @@ void SubtreeMutation::mutate(Individual& individual, const int& maxDepth)
 
 		individual.replaceNodeWithSubTree(subTree, mutNodeIdx, mutNodeDepth);
 	}
-	cout << "Mutated individual:" << endl;
-	cout << individual << endl;
 
 	if (individual.getMaxDepth() > maxDepth) {
 		cout << "individual.getMaxDepth(): " << individual.getMaxDepth() << " maxDepth: " << maxDepth << endl;
 		throw invalid_argument("Depth is greater than max depth after subtree mutation");
 		exit(1);
 	}
-	cout << "Subtree mutation end" << endl;
 }
 
 void SubtreeMutation::setTerminalSet(TerminalSet termSet)

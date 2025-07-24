@@ -44,6 +44,9 @@ GeneticProgramming::GeneticProgramming()
 	this->windowWidth = 0;
 	this->maxTreeDepth = 10;
 	this->threadCnt = 1;
+    this->mergeConstantOptimalization = false;
+	this->removeUselessBranchesOptimalization = false;
+	this->DAGOptimalization = false;
 }
 
 void GeneticProgramming::standartRun(const int& maxGenerationNum, const int& startTreeDepth, bool debugPrints)
@@ -87,9 +90,9 @@ void GeneticProgramming::standartRun(const int& maxGenerationNum, const int& sta
             break;
         }
 
-        if (debugPrints) {
-            cout << "---------------------- Generation n." << generationNum << " ----------------------" << endl;
-        }
+
+        cout << "---------------------- Generation n." << generationNum << " ----------------------" << endl;
+
 
         double accImp = 0.0;
         if (this->constantTuning) {
@@ -170,8 +173,20 @@ void GeneticProgramming::standartRun(const int& maxGenerationNum, const int& sta
                         cout << "Before: " << scoreBefore << "; After: " << scoreAfter << endl;
                     }
                 }
-
-                accImp += min(100.0, -((scoreBefore + scoreAfter) / scoreBefore));
+                double improvement = 0.0;
+                if (isnan(scoreBefore) && !isnan(scoreAfter)) {
+                    improvement = 100.0;
+                }
+                else if (!isnan(scoreBefore) && !isnan(scoreAfter) && scoreBefore != 0.0) {
+                    improvement = 100.0 * (scoreAfter - scoreBefore) / abs(scoreBefore);
+                    improvement = min(100.0, improvement); // Omez na max 100%
+                }
+                else {
+                    improvement = 0.0;
+                }
+                if (!isnan(improvement)) {
+                    accImp += improvement;
+                }
             }
         }
 
@@ -254,13 +269,13 @@ void GeneticProgramming::standartRun(const int& maxGenerationNum, const int& sta
             }
         }
 
-        if (debugPrints) {
-            cout << "Average fitness: " << acc / (populationSize - infCnt) << endl;
-            cout << "Average depth: " << depthAcc / (populationSize - infCnt) << endl;
-            cout << "% of improvements: " << accImp / this->vectorGA_populationSize;
-            cout << "Best fitness: " << maxFitness << endl;
-            cout << "Best individual: " << endl << this->population.at(bestIndividualIdx) << endl;
-        }
+
+        cout << "Average fitness: " << acc / (populationSize - infCnt) << endl;
+        cout << "Average depth: " << depthAcc / (populationSize - infCnt) << endl;
+        cout << "Average improvement: " << accImp / this->vectorGA_populationSize << "%" << endl;
+        cout << "Best fitness: " << maxFitness << endl;
+        cout << "Best individual: " << endl << this->population.at(bestIndividualIdx) << endl;
+        
 
         if (this->datFile) {
             file << generationNum << " " << acc / (populationSize - infCnt) << " " << maxFitness << endl;
@@ -276,100 +291,123 @@ void GeneticProgramming::standartRun(const int& maxGenerationNum, const int& sta
 
 #pragma omp parallel for schedule(static,1)
         for (int i = 0; i < populationSize; i++) {
-#pragma omp critical
-            {
-                cout << "Thread " << omp_get_thread_num() << " vytváří jedince n." << i << endl;
+            if (debugPrints) {
+            #pragma omp critical
+                {
+                    cout << "Thread " << omp_get_thread_num() << " vytváří jedince n." << i << endl;
+                }
             }
+
             Individual newIndividual;
             double seed1 = Random::randProb();
 
             if (seed1 <= this->randomIndividualProb) {
-#pragma omp critical
-                {
-                    cout << "Creating random individual" << endl;
-                }
-                newIndividual = Individual::generateRandomTreeGrowMethod(startTreeDepth, this->functionSet, this->terminalSet);
-
-#pragma omp critical
-                {
-                    if (debugPrints) {
-                        cout << "New individual created by random: " << endl << newIndividual << endl;
+                if (debugPrints) {
+                #pragma omp critical
+                    {
+                        cout << "Creating random individual" << endl;
                     }
                 }
+
+                newIndividual = Individual::generateRandomTreeGrowMethod(startTreeDepth, this->functionSet, this->terminalSet);
+
+
+
+                if (debugPrints) {
+#                   pragma omp critical
+                    cout << "New individual created by random: " << endl << newIndividual << endl;
+                }
+
             }
             else {
                 double seed2 = Random::randProb();
                 if (seed2 <= this->crossover_prob) {
-#pragma omp critical
-                    {
+                    if (debugPrints) {
+#                   pragma omp critical
                         cout << "Crossover start" << endl;
                     }
+
                     Individual parent1, parent2;
                     parent1 = this->selection->selectIndividual(this->population, fitnessValues);
                     parent2 = this->selection->selectIndividual(this->population, fitnessValues);
 
                     newIndividual = this->crossover->createOffspring(parent1, parent2, this->maxTreeDepth);
 
+
+                    if (debugPrints) {
 #pragma omp critical
-                    {
-                        if (debugPrints) {
+                        {
                             cout << "New individual created by crossover: " << endl
                                 << "Parent1:" << endl << parent1 << endl
                                 << "Parent2:" << endl << parent2 << endl
                                 << "New Individual:" << endl << newIndividual << endl;
                         }
-                        cout << "Crossover end" << endl;
+                      }
                     }
-                }
-                else {
-#pragma omp critical
-                    {
-                        cout << "Copying" << endl;
-                    }
-                    Individual selected;
-                    {
-                        selected = this->selection->selectIndividual(this->population, fitnessValues);
-                    }
-
-                    newIndividual = Individual(selected);
-
-#pragma omp critical
-                    {
+                    else {
                         if (debugPrints) {
+                        #pragma omp critical
+                            cout << "Copying" << endl;
+                        }
+                        Individual selected;
+                        {
+                            selected = this->selection->selectIndividual(this->population, fitnessValues);
+                        }
+
+                        newIndividual = Individual(selected);
+
+
+
+                        if (debugPrints) {
+                            #pragma omp critical
                             cout << "New individual created copying: " << endl << newIndividual << endl;
                         }
+
                     }
                 }
-            }
 
-            this->mutation->mutate(newIndividual, this->maxTreeDepth);
+                this->mutation->mutate(newIndividual, this->maxTreeDepth);
 
-#pragma omp critical
-            {
+
+
                 if (debugPrints) {
+                    #pragma omp critical
                     cout << "New individual after mutation:" << endl << newIndividual << endl;
                 }
+
+
+                newPopulation[i] = newIndividual;
             }
 
-            newPopulation[i] = newIndividual;
+#pragma omp parallel for schedule(static,1)
+        for (int i = 0; i < newPopulation.size(); i++) {
+            if (debugPrints) {
+#pragma omp critical
+                cout << "Before optimalization: " << endl << newPopulation[i] << endl;
+            }
+            newPopulation[i].optimizeSelf(this->mergeConstantOptimalization, this->removeUselessBranchesOptimalization, this->DAGOptimalization);
+            if (debugPrints) {
+#pragma omp critical
+                cout << "After optimalization: " << endl << newPopulation[i] << endl;
+            }
+        }
+            
+            auto end = std::chrono::high_resolution_clock::now();
+            auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+            cout << "[DEBUG] Generation took " << duration << " ms with " << this->threadCnt << " threads." << endl;
+            this->population.setPopulation(newPopulation);
         }
 
-        auto end = std::chrono::high_resolution_clock::now();
-        auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
-        cout << "[DEBUG] Generation took " << duration << " ms with " << this->threadCnt << " threads." << endl;
-        this->population.setPopulation(newPopulation);
-    }
-
-    if (debugPrints) {
+        
         cout << "End of genetic programming" << endl;
         cout << "Best fitness: " << bestScore << endl;
         cout << "Best individual (depth: " << bestOfBest.getMaxDepth() << "): " << endl << bestOfBest << endl;
-    }
+        
 
-    if (this->datFile) {
-        file.close();
+        if (this->datFile) {
+            file.close();
+        }
     }
-}
 
 void GeneticProgramming::setPopulation(Population population)
 {
@@ -479,12 +517,19 @@ void GeneticProgramming::setThreadCnt(const int& threadCnt)
 	this->threadCnt = threadCnt;
 }
 
+void GeneticProgramming::setOptimalizationParams(bool mergeConstantOptimalization, bool removeUselessBranchesOptimalization, bool DAGOptimalization)
+{
+	this->mergeConstantOptimalization = mergeConstantOptimalization;
+	this->removeUselessBranchesOptimalization = removeUselessBranchesOptimalization;
+	this->DAGOptimalization = DAGOptimalization;
+}
+
 vector<double> GeneticProgramming::tuneConstants(Individual& individual, vector<double> originalConstants, shared_ptr<map<int, map<string, double>>> dbTablePtr)
 {
-#pragma omp critical
-	{
-		cout << "[tuneConstants] Thread " << omp_get_thread_num() << " začíná optimalizaci konstant pro jedince." << endl;
-	}
+    //#pragma omp critical
+	//{
+	//	cout << "[tuneConstants] Thread " << omp_get_thread_num() << " začíná optimalizaci konstant pro jedince." << endl;
+	//}
 	int size = individual.getConstantTableRef().getSize();
 
 	if (size == 0) {

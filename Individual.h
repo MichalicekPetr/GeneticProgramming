@@ -85,4 +85,8 @@ public:
 	void setNodeVec(vector<unique_ptr<Node>>&& newVec);
 	int predictOffspringDepthAfterSubtreeReplace(int replaceIdx, int replaceNodeDepth, int subtreeDepth) const;
 
+	void optimizeSelf(const bool & mergeConstants, const bool & removeUselessBranches, const bool & DAG);
+	void mergeConstants();
+	void removeUselessBranches();
+	void createDAG();
 };
