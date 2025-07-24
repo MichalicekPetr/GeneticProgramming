@@ -36,6 +36,7 @@ void SubtreeMutation::mutate(Individual& individual, const int& maxDepth)
 			: Individual::generateRandomTreeGrowMethod(newDepth, this->funcSet, this->termSet);
 
 		individual.replaceNodeWithSubTree(subTree, mutNodeIdx, mutNodeDepth);
+		individual.validateTreeStructure();
 	}
 
 	if (individual.getMaxDepth() > maxDepth) {
@@ -43,6 +44,7 @@ void SubtreeMutation::mutate(Individual& individual, const int& maxDepth)
 		throw invalid_argument("Depth is greater than max depth after subtree mutation");
 		exit(1);
 	}
+	
 }
 
 void SubtreeMutation::setTerminalSet(TerminalSet termSet)
@@ -94,6 +96,7 @@ void NodeReplacementMutation::mutate(Individual& individual, const int & maxDept
 			}
 		}	
 	}
+	individual.validateTreeStructure();	
 }
 
 CombinedMutation::CombinedMutation(const double& nodeReplacementMutationProb, const double & subTreeMutationProb, const FunctionSet& funcSet, const TerminalSet& termSet)

@@ -470,9 +470,6 @@ int main()
             vector<string> colNames = connection.getColNames("testschema", "testdb1");
             colNames.erase(std::remove(colNames.begin(), colNames.end(), "y"), colNames.end());
 
-
-     
-
             FunctionSet funcSet = FunctionSet::createArithmeticFunctionSet();
             TerminalSet termSet = TerminalSet(-5, 5, false, colNames);
 

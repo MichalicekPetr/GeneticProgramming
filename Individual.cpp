@@ -234,25 +234,19 @@ int Individual::calculateDepthFromIdx(const int& idx)
 // Přepsáno
 int Individual::calculateInsertIdx(const int& subtreeIdx, const int& replacePointIdx)
 {
-	int idx = replacePointIdx;
-	int current = subtreeIdx;
+    if (subtreeIdx == 0)
+        return replacePointIdx;
 
-	while (current > 0) {
-		int parent = (current - 1) / 2;
+    int parentSubtreeIdx = (subtreeIdx - 1) / 2;
+    int parentInsertIdx = calculateInsertIdx(parentSubtreeIdx, replacePointIdx);
 
-		if (current == 2 * parent + 1) {
-			// current je levý potomek → jdeme doleva
-			idx = 2 * idx + 1;
-		}
-		else {
-			// current je pravý potomek → jdeme doprava
-			idx = 2 * idx + 2;
-		}
-
-		current = parent;
-	}
-
-	return idx; // ← tohle je index do nodeVec
+    if (subtreeIdx == 2 * parentSubtreeIdx + 1) {
+        // Levý potomek
+        return 2 * parentInsertIdx + 1;
+    } else {
+        // Pravý potomek
+        return 2 * parentInsertIdx + 2;
+    }
 }
 
 // Přepsáno
@@ -1228,4 +1222,25 @@ void Individual::removeUselessBranches()
 
 void Individual::createDAG()
 {
+}
+
+void Individual::validateTreeStructure() const
+{
+	for (int i = 0; i <= this->lastNodeIdx; ++i) {
+		Node* node = this->nodeVec.at(i).get();
+		if (!node) continue;
+
+		bool isLeaf = this->isLeafAtIdx(i);
+
+		if (isLeaf && node->isFunctionNode()) {
+			cout << *this;
+			throw std::runtime_error("Chyba: Leaf na indexu " + std::to_string(i) + " je FunctionNode!");
+			exit(1);
+		}
+		if (!isLeaf && node->isTerminalNode()) {
+			cout << *this;
+			throw std::runtime_error("Chyba: Vnitřní uzel na indexu " + std::to_string(i) + " je TerminalNode!");
+			exit(1);
+		}
+	}
 }

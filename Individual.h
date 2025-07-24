@@ -89,4 +89,6 @@ public:
 	void mergeConstants();
 	void removeUselessBranches();
 	void createDAG();
+
+	void validateTreeStructure() const;
 };

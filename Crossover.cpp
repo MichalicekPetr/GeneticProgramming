@@ -46,6 +46,7 @@ Individual TwoPointCrossover::createOffspring(const Individual& parent1, const I
 			Individual subtree = parent2.extractSubtree(idx2);
 			Individual offspring = Individual(parent1);
 			offspring.replaceNodeWithSubTree(std::move(subtree), idx1, depth1);	
+			offspring.validateTreeStructure();
 			return offspring;
 		}
 	}
