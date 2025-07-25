@@ -21,7 +21,6 @@ SubtreeMutation::SubtreeMutation(const double& mutationProb, const FunctionSet& 
 
 void SubtreeMutation::mutate(Individual& individual, const int& maxDepth)
 {
-	cout << "Subtree mutace start" << endl;
 	double seed = Random::randProb();
 	if (seed <= this->mutationProb) {
 		int mutNodeIdx = individual.pickRandomNodeIdx();
@@ -48,6 +47,7 @@ void SubtreeMutation::mutate(Individual& individual, const int& maxDepth)
 
 		individual.replaceNodeWithSubTree(subTree, mutNodeIdx, mutNodeDepth);
 		individual.validateTreeStructure();
+		individual.resetDagMap();
 	}
 
 	if (individual.getMaxDepth() > maxDepth) {
@@ -55,8 +55,7 @@ void SubtreeMutation::mutate(Individual& individual, const int& maxDepth)
 		throw invalid_argument("Depth is greater than max depth after subtree mutation");
 		exit(1);
 	}
-	cout << "Subtree mutace end" << endl;
-	
+
 }
 
 void SubtreeMutation::setTerminalSet(TerminalSet termSet)
@@ -105,6 +104,7 @@ void NodeReplacementMutation::mutate(Individual& individual, const int & maxDept
 				else {
 					throw invalid_argument("Node isnt terminal neither func");
 				}
+				individual.resetDagMap();
 			}
 		}	
 	}

@@ -20,7 +20,6 @@ MysqlConnection::MysqlConnection(const MysqlConnection& other)
 
 void MysqlConnection::connectToDb(string url, string user, string password, string dbName, int port)
 {
-	cout << this->conn->status << endl;
 	conn = mysql_real_connect(this->conn, url.c_str(), user.c_str(), password.c_str(), dbName.c_str(), port, NULL, 0);
 	if (!conn) {
 		cout << "Conection failed" << endl;

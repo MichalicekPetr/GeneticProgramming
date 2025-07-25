@@ -164,7 +164,7 @@ void GeneticProgramming::standartRun(const int& maxGenerationNum, const int& sta
                         cout << "Individual n." << i + 1 << " after constant tuning" << endl << individualRef << endl;
                     }
                 }
-
+                 
                 double scoreAfter = fitness->evaluate(individualRef, dbMapPtr, targetValues);
 
 #pragma omp critical
@@ -379,7 +379,7 @@ void GeneticProgramming::standartRun(const int& maxGenerationNum, const int& sta
                 newPopulation[i] = newIndividual;
             }
 
-#pragma omp parallel for schedule(static,1)
+        #pragma omp parallel for schedule(static,1)
         for (int i = 0; i < newPopulation.size(); i++) {
             if (debugPrints) {
             Individual beforeOpt = Individual(newPopulation[i]);
@@ -387,7 +387,7 @@ void GeneticProgramming::standartRun(const int& maxGenerationNum, const int& sta
             newPopulation[i].optimizeSelf(this->mergeConstantOptimalization, this->removeUselessBranchesOptimalization, this->DAGOptimalization);
 
             if (!(beforeOpt == newPopulation[i])) {
-#pragma omp critical
+            #pragma omp critical
                 {
                     cout << "Before optimalization: " << endl << beforeOpt << endl;
                     cout << "After optimalization: " << endl << newPopulation[i] << endl;
@@ -398,6 +398,7 @@ void GeneticProgramming::standartRun(const int& maxGenerationNum, const int& sta
         else {
             newPopulation[i].optimizeSelf(this->mergeConstantOptimalization, this->removeUselessBranchesOptimalization, this->DAGOptimalization);
         }
+
 
         }
             

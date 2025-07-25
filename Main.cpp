@@ -485,7 +485,7 @@ int main()
 			int threadCnt = 1;
             geneticProgramming.setThreadCnt(threadCnt);
 
-            int popSize = 10;
+            int popSize = 20;
             geneticProgramming.setPopulation(Population(popSize, unique_ptr<PopulationInitMethod>(new RandomHalfFullHalfGrowInitialization())));
 
             geneticProgramming.setFunctionSet(funcSet);
@@ -557,7 +557,7 @@ int main()
 
 			bool mergeConstantOptimalization = false;
 			bool removeUselessBranchesOptimalization = false;
-			bool DAGOptimalization = false;
+			bool DAGOptimalization = true;
 			geneticProgramming.setOptimalizationParams(mergeConstantOptimalization, removeUselessBranchesOptimalization, DAGOptimalization);
 
             geneticProgramming.standartRun(1000, 4, false);

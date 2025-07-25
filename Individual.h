@@ -19,6 +19,7 @@ private:
 	int lastNodeIdx;
 	ConstantTable constantTable;
 	bool constantTableCreated;
+	map<int, int> dagLinks;
 
 	void fillLayersVector(vector<vector<string>>& layers, vector<int>& maxSizes) const;
 	string addSpacesToElement(const string& originalElement, int elementSize) const;
@@ -28,7 +29,7 @@ private:
 	void eraseSubtree(const int& idx);
 	void updateStats();
 	void ensureFullBinaryStructure();
-
+	bool dagMapCreated = false;
 
 public:
 	Individual();
@@ -55,6 +56,8 @@ public:
 	double evaluate(shared_ptr<Connection>& conn, string dbName, string tableName, const int& rowIdx) const;
 	double evaluate(const map<string, double>& rowMap) const;
 	double evaluateRec(const int& idx) const;
+	double evaluateRecDAG(const int& idx, std::map<int, double>& dagCache) const;
+
 	void assignValueToDataPoints(const map<string, double>& rowMap) const;
 
 	friend std::ostream& operator<<(std::ostream& os, const Individual& individual);
@@ -92,4 +95,9 @@ public:
 	void createDAG();
 
 	void validateTreeStructure() const;
+
+	string serializeSubtree(int idx) const;
+	void resetDagMap();
+
+	bool isDagMapCreated() const;
 };

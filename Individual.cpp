@@ -129,6 +129,9 @@ Individual& Individual::operator=(const Individual& original)
 	constantTable = ConstantTable();   // nebo original.constantTable pokud je to žádané
 	constantTableCreated = false;
 
+	this->dagMapCreated = false;
+	this->dagLinks = map<int, int>();
+
 	return *this;
 }
 
@@ -431,6 +434,8 @@ Individual::Individual()
 	this->constantTable = ConstantTable();
 	this->constantTableCreated = false;
 	this->lastNodeIdx = -1;
+	this->dagMapCreated = false;
+	this->dagLinks = map<int, int>();
 }
 
 // Přepsané
@@ -455,6 +460,15 @@ Individual::Individual(const Individual& original)
 
 	this->constantTable = ConstantTable();
 	this->constantTableCreated = false;
+
+	if (original.dagMapCreated) {
+		this->dagMapCreated = true;
+		this->dagLinks = original.dagLinks;
+	}
+	else {
+		this->dagMapCreated = false;
+		this->dagLinks = map<int, int>();
+	}
 }
 
 // Přepsáno
@@ -485,6 +499,9 @@ Individual::Individual(const vector<int>& structure, const int& depth, const int
 			throw std::runtime_error("Chyba ve struktuře stromu");
 		}
 	}
+
+	this->dagMapCreated = false;
+	this->dagLinks = map<int, int>();
 }
 
 // Přepsáno
@@ -842,8 +859,13 @@ double Individual::evaluate(shared_ptr<Connection>& conn, string dbName, string 
 double Individual::evaluate(const map<string, double>& rowMap) const
 {
 	this->assignValueToDataPoints(rowMap);
-	return this->evaluateRec(0);
-
+	if (this->dagMapCreated) {
+		std::map<int, double> dagCache;
+		return this->evaluateRecDAG(0, dagCache);
+	}
+	else{
+		return this->evaluateRec(0);
+	}
 }
 
 // Přepsáno
@@ -890,6 +912,8 @@ double Individual::evaluateRec(const int& idx) const
 	}
 }
 
+
+
 // Přepsáno
 void Individual::assignValueToDataPoints(const std::map<std::string, double>& rowMap) const
 {
@@ -909,7 +933,57 @@ void Individual::assignValueToDataPoints(const std::map<std::string, double>& ro
 }
 
 
+double Individual::evaluateRecDAG(const int& idx, std::map<int, double>& dagCache) const
+{
+	// Pokud je uzel sdílený, použij výsledek z cache
+	auto it = dagLinks.find(idx);
+	if (it != dagLinks.end() && it->second != -1) {
+		int sharedIdx = it->second;
+		auto cacheIt = dagCache.find(sharedIdx);
+		if (cacheIt != dagCache.end()) {
+			//std::cout << "[DAG DEBUG] Cache hit na indexu " << idx << " (sdílený s " << sharedIdx << "), hodnota: " << cacheIt->second << std::endl;
+			//std::cout << "[DAG DEBUG] Aktuální Individual:\n" << *this << std::endl;
+			//std::cout << "Pokračujte stisknutím libovolné klávesy..." << std::endl;
+			//std::cin.get();
+			return cacheIt->second;
+		}
+		// Pokud není v cache, spočítej a ulož
+		double val = evaluateRecDAG(sharedIdx, dagCache);
+		dagCache[sharedIdx] = val;
+		return val;
+	}
 
+	Node* current = this->nodeVec.at(idx).get();
+	if (current->isTerminalNode()) {
+		TerminalNode* node = dynamic_cast<TerminalNode*>(current);
+		double val = node->getValue();
+		dagCache[idx] = val;
+		return val;
+	}
+
+	FunctionNode* node = dynamic_cast<FunctionNode*>(current);
+	int leftChildIdx = Individual::getLeftChildIdx(idx);
+	int rightChildIdx = leftChildIdx + 1;
+	bool hasRightChild = TRUE, hasLeftChild = TRUE;
+
+	if (leftChildIdx > this->lastNodeIdx || this->nodeVec.at(leftChildIdx) == nullptr)
+		hasLeftChild = FALSE;
+	if (rightChildIdx > this->lastNodeIdx || this->nodeVec.at(rightChildIdx) == nullptr)
+		hasRightChild = FALSE;
+
+	double result;
+	if (!hasLeftChild && !hasRightChild)
+		result = nan("0");
+	else if (!hasLeftChild && hasRightChild)
+		result = node->evaluateFunction(0.0, evaluateRecDAG(rightChildIdx, dagCache), false, true);
+	else if (hasLeftChild && !hasRightChild)
+		result = node->evaluateFunction(evaluateRecDAG(leftChildIdx, dagCache), 0.0, true, false);
+	else
+		result = node->evaluateFunction(evaluateRecDAG(leftChildIdx, dagCache), evaluateRecDAG(rightChildIdx, dagCache), true, true);
+
+	dagCache[idx] = result;
+	return result;
+}
 // Přepsáno
 int Individual::getMaxDepth() const
 {
@@ -1362,6 +1436,30 @@ void Individual::removeUselessBranches()
 
 void Individual::createDAG()
 {
+	dagLinks.clear();
+	std::map<std::string, int> subtreeHashes; // hash → index
+
+	for (int i = 0; i <= lastNodeIdx; ++i) {
+		if (!nodeVec.at(i)) continue;
+
+		// Ignoruj terminály (podstromy hloubky 1)
+		if (nodeVec.at(i)->isTerminalNode()) {
+			dagLinks[i] = -1;
+			continue;
+		}
+
+		std::string hash = serializeSubtree(i);
+
+		auto it = subtreeHashes.find(hash);
+		if (it != subtreeHashes.end()) {
+			dagLinks[i] = it->second; // odkaz na první výskyt
+		}
+		else {
+			dagLinks[i] = -1; // není sdílený
+			subtreeHashes[hash] = i;
+		}
+	}
+	this->dagMapCreated = true;
 }
 
 void Individual::validateTreeStructure() const
@@ -1383,4 +1481,24 @@ void Individual::validateTreeStructure() const
 			exit(1);
 		}
 	}
+}
+
+string Individual::serializeSubtree(int idx) const
+{
+	if (idx < 0 || idx > lastNodeIdx || !nodeVec.at(idx)) return "#";
+	std::string s = nodeVec.at(idx)->toString();
+	int left = getLeftChildIdx(idx);
+	int right = left + 1;
+	s += "(" + serializeSubtree(left) + "," + serializeSubtree(right) + ")";
+	return s;
+}
+
+void Individual::resetDagMap()
+{
+	this->dagMapCreated = false;
+}
+
+bool Individual::isDagMapCreated() const
+{
+	return this->dagMapCreated; 
 }
