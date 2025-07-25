@@ -21,6 +21,7 @@ public:
 
 	string getName() const;
 	int getParity() const;
+	friend bool operator==(const Function& lhs, const Function& rhs);
 };
 
 class FunctionSet {

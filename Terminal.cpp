@@ -141,6 +141,13 @@ std::ostream& operator<<(std::ostream& os, const Terminal& terminal)
 	return os;
 }
 
+bool operator==(const Terminal& lhs, const Terminal& rhs)
+{
+	return lhs.isDataPoint() == rhs.isDataPoint() &&
+		lhs.getLabel() == rhs.getLabel() &&
+		lhs.getValue() == rhs.getValue();
+}
+
 
 TerminalSet::TerminalSet()
 {

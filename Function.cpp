@@ -155,3 +155,14 @@ std::vector<int> FunctionSet::prepareFunctionIndexPool(const std::map<std::strin
 const std::vector<Function>& FunctionSet::getFunctions() const {
 	return functions;
 }
+
+bool operator==(const Function& lhs, const Function& rhs)
+{
+	return lhs.getName() == rhs.getName() &&
+		lhs.getParity() == rhs.getParity();
+}
+
+bool operator==(const Function lhs, const Function rhs)
+{
+	return false;
+}

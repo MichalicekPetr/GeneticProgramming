@@ -21,6 +21,7 @@ SubtreeMutation::SubtreeMutation(const double& mutationProb, const FunctionSet& 
 
 void SubtreeMutation::mutate(Individual& individual, const int& maxDepth)
 {
+	cout << "Subtree mutace start" << endl;
 	double seed = Random::randProb();
 	if (seed <= this->mutationProb) {
 		int mutNodeIdx = individual.pickRandomNodeIdx();
@@ -28,7 +29,17 @@ void SubtreeMutation::mutate(Individual& individual, const int& maxDepth)
 		int treeDepth = individual.getMaxDepth();
 
 		int newDepthUpperbound = max(1, min(treeDepth + 3 - mutNodeDepth, maxDepth - mutNodeDepth));
-		int newDepth = Random::randInt(1, newDepthUpperbound	);
+
+
+		int newDepth = Random::randInt(1, newDepthUpperbound);
+		if (newDepth <= 0) {
+			cout << "mutNodeIdx: " << mutNodeIdx
+				<< " mutNodeDepth: " << mutNodeDepth
+				<< " treeDepth: " << treeDepth
+				<< " newDepth: " << newDepth << endl;
+			throw invalid_argument("New Depth has to be greater than 1");
+			exit(1);
+		}
 
 		double seed2 = Random::randProb();
 		Individual subTree = (seed2 <= 0.25)
@@ -44,6 +55,7 @@ void SubtreeMutation::mutate(Individual& individual, const int& maxDepth)
 		throw invalid_argument("Depth is greater than max depth after subtree mutation");
 		exit(1);
 	}
+	cout << "Subtree mutace end" << endl;
 	
 }
 

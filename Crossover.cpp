@@ -5,11 +5,13 @@
 
 using namespace std;
 
-TwoPointCrossover::TwoPointCrossover() : TwoPointCrossover(0.1){}
+TwoPointCrossover::TwoPointCrossover() : TwoPointCrossover(0.1, 0.1, 0.8){}
 
-TwoPointCrossover::TwoPointCrossover(double leafPickProb)
+TwoPointCrossover::TwoPointCrossover(const double & leafPickProb, const double & subtreeLeafPickProb, const double & parentLeafPickProbb)
 {
 	this->leafPickProb = leafPickProb;
+	this->subtreeLeafPickProb = subtreeLeafPickProb;
+	this->parentLeafPickProb = parentLeafPickProbb;
 }
 
 Individual TwoPointCrossover::createOffspring(const Individual& parent1, const Individual& parent2, const int& maxDepth) const
@@ -18,11 +20,11 @@ Individual TwoPointCrossover::createOffspring(const Individual& parent1, const I
 		//cout << "Create offspring start" << endl;
 		//cout << "A" << endl;
 		// 1. Vyber body pro køížení
-		int idx1 = (Random::randProb() <= this->leafPickProb)
+		int idx1 = (Random::randProb() <= this->parentLeafPickProb)
 			? parent1.pickRandomLeafIdx()
 			: parent1.pickRandomInnerNodeIdx();
 
-		int idx2 = (Random::randProb() <= this->leafPickProb)
+		int idx2 = (Random::randProb() <= this->subtreeLeafPickProb)
 			? parent2.pickRandomLeafIdx()
 			: parent2.pickRandomInnerNodeIdx();
 

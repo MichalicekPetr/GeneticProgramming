@@ -382,14 +382,23 @@ void GeneticProgramming::standartRun(const int& maxGenerationNum, const int& sta
 #pragma omp parallel for schedule(static,1)
         for (int i = 0; i < newPopulation.size(); i++) {
             if (debugPrints) {
-#pragma omp critical
-                cout << "Before optimalization: " << endl << newPopulation[i] << endl;
-            }
+            Individual beforeOpt = Individual(newPopulation[i]);
+
             newPopulation[i].optimizeSelf(this->mergeConstantOptimalization, this->removeUselessBranchesOptimalization, this->DAGOptimalization);
-            if (debugPrints) {
+
+            if (!(beforeOpt == newPopulation[i])) {
 #pragma omp critical
-                cout << "After optimalization: " << endl << newPopulation[i] << endl;
+                {
+                    cout << "Before optimalization: " << endl << beforeOpt << endl;
+                    cout << "After optimalization: " << endl << newPopulation[i] << endl;
+                }
+
             }
+        }
+        else {
+            newPopulation[i].optimizeSelf(this->mergeConstantOptimalization, this->removeUselessBranchesOptimalization, this->DAGOptimalization);
+        }
+
         }
             
             auto end = std::chrono::high_resolution_clock::now();

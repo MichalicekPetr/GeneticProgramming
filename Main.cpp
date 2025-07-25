@@ -66,7 +66,9 @@ void tuneHyperParamatersGP() {
 
                         double crossoverProb = x4;
                         double leafPickProb = 0.1;
-                        geneticProgramming.setCrossover(unique_ptr<Crossover>(new TwoPointCrossover(leafPickProb)), crossoverProb);
+                        double subtreeLeafPickProb = 0.1;
+                        double parentLeafPickProb = 0.8;
+                        geneticProgramming.setCrossover(unique_ptr<Crossover>(new TwoPointCrossover(leafPickProb, subtreeLeafPickProb, parentLeafPickProb)), crossoverProb);
 
                         geneticProgramming.setFitness(unique_ptr<FitnessFunction>(new ClassicFitnessFunction()));
 
@@ -240,9 +242,11 @@ int main()
             int tournamentSize = 4;
             geneticProgramming.setSelection(unique_ptr<Selection>(new TournamentSelection(tournamentSize)));
 
-            double crossoverProb = 0.58;
+            double crossoverProb = 0.7;
             double leafPickProb = 0.1;
-            geneticProgramming.setCrossover(unique_ptr<Crossover>(new TwoPointCrossover(leafPickProb)), crossoverProb);
+            double subtreeLeafPickProb = 0.1;
+            double parentLeafPickProb = 0.8;
+            geneticProgramming.setCrossover(unique_ptr<Crossover>(new TwoPointCrossover(leafPickProb, subtreeLeafPickProb, parentLeafPickProb)), crossoverProb);
 
             geneticProgramming.setFitness(unique_ptr<FitnessFunction>(new ClassicFitnessFunction()));
 
@@ -323,7 +327,9 @@ int main()
 
             double crossoverProb = 0.7;
             double leafPickProb = 0.1;
-            geneticProgramming.setCrossover(unique_ptr<Crossover>(new TwoPointCrossover(leafPickProb)), crossoverProb);
+            double subtreeLeafPickProb = 0.1;
+            double parentLeafPickProb = 0.8;
+            geneticProgramming.setCrossover(unique_ptr<Crossover>(new TwoPointCrossover(leafPickProb, subtreeLeafPickProb, parentLeafPickProb)), crossoverProb);
 
             geneticProgramming.setFitness(unique_ptr<FitnessFunction>(new ClassicFitnessFunction()));
 
@@ -403,9 +409,11 @@ int main()
             int tournamentSize = 4;
             geneticProgramming.setSelection(unique_ptr<Selection>(new TournamentSelection(tournamentSize)));
 
-            double crossoverProb = 0.58;
+            double crossoverProb = 0.7;
             double leafPickProb = 0.1;
-            geneticProgramming.setCrossover(unique_ptr<Crossover>(new TwoPointCrossover(leafPickProb)), crossoverProb);
+            double subtreeLeafPickProb = 0.1;
+            double parentLeafPickProb = 0.8;
+            geneticProgramming.setCrossover(unique_ptr<Crossover>(new TwoPointCrossover(leafPickProb, subtreeLeafPickProb, parentLeafPickProb)), crossoverProb);
 
             geneticProgramming.setFitness(unique_ptr<FitnessFunction>(new ClassicFitnessFunction()));
 
@@ -474,10 +482,10 @@ int main()
             TerminalSet termSet = TerminalSet(-5, 5, false, colNames);
 
             GeneticProgramming geneticProgramming = GeneticProgramming();
-			int threadCnt = 4;
+			int threadCnt = 1;
             geneticProgramming.setThreadCnt(threadCnt);
 
-            int popSize = 50;
+            int popSize = 10;
             geneticProgramming.setPopulation(Population(popSize, unique_ptr<PopulationInitMethod>(new RandomHalfFullHalfGrowInitialization())));
 
             geneticProgramming.setFunctionSet(funcSet);
@@ -492,7 +500,9 @@ int main()
 
             double crossoverProb = 0.7;
             double leafPickProb = 0.1;
-            geneticProgramming.setCrossover(unique_ptr<Crossover>(new TwoPointCrossover(leafPickProb)), crossoverProb);
+			double subtreeLeafPickProb = 0.1;
+			double parentLeafPickProb = 0.8;
+            geneticProgramming.setCrossover(unique_ptr<Crossover>(new TwoPointCrossover(leafPickProb, subtreeLeafPickProb, parentLeafPickProb)), crossoverProb);
 
             geneticProgramming.setFitness(unique_ptr<FitnessFunction>(new ClassicFitnessFunction()));
 
@@ -543,9 +553,9 @@ int main()
             int windowWidth = 10;
             geneticProgramming.setWindowParams(useWindow, windowHeight, windowWidth);
 
-            geneticProgramming.setMaxDepth(7);
+            geneticProgramming.setMaxDepth(8);
 
-			bool mergeConstantOptimalization = true;
+			bool mergeConstantOptimalization = false;
 			bool removeUselessBranchesOptimalization = false;
 			bool DAGOptimalization = false;
 			geneticProgramming.setOptimalizationParams(mergeConstantOptimalization, removeUselessBranchesOptimalization, DAGOptimalization);

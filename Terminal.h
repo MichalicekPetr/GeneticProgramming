@@ -44,7 +44,7 @@ public:
 	Terminal operator-() const;
 
 	friend std::ostream& operator<<(std::ostream& os, const Terminal& terminal);
-
+	friend bool operator==(const Terminal& lhs, const Terminal& rhs);
 
 };
 

@@ -11,6 +11,7 @@
 #include "Individual.h"
 #include "Node.h"
 #include "Random.h"
+#include "Function.h"
 
 using namespace std;
 
@@ -1027,6 +1028,38 @@ std::ostream& operator<<(std::ostream& os, const Individual& individual)
 	return os;
 }
 
+bool operator==(const Individual& lhs, const Individual& rhs)
+{
+	for (int i = 0; i <= lhs.lastNodeIdx; ++i) {
+		const Node* lptr = lhs.nodeVec[i] ? lhs.nodeVec[i].get() : nullptr;
+		const Node* rptr = rhs.nodeVec[i] ? rhs.nodeVec[i].get() : nullptr;
+
+		if (!lptr && !rptr)
+			continue;
+		if (!lptr || !rptr)
+			return false;
+
+		// Porovnání typu uzlu
+		if (lptr->isFunctionNode() && rptr->isFunctionNode()) {
+			const FunctionNode* lf = dynamic_cast<const FunctionNode*>(lptr);
+			const FunctionNode* rf = dynamic_cast<const FunctionNode*>(rptr);
+			if (!(lf->getFunction() == rf->getFunction()))
+				return false;
+		}
+		else if (lptr->isTerminalNode() && rptr->isTerminalNode()) {
+			const TerminalNode* lt = dynamic_cast<const TerminalNode*>(lptr);
+			const TerminalNode* rt = dynamic_cast<const TerminalNode*>(rptr);
+			if (!(lt->getTerminalConst() == rt->getTerminalConst()))
+				return false;
+		}
+		else {
+			// Jeden je funkce, druhý terminál, nebo jiný typ
+			return false;
+		}
+	}
+	return true;
+}
+
 // Přepsáno
 Node* Individual::getNodeAt(const int& idx) const
 {
@@ -1218,6 +1251,113 @@ void Individual::mergeConstants()
 
 void Individual::removeUselessBranches()
 {
+	for (int i = 0; i <= this->lastNodeIdx; ++i) {
+		Node* node = this->nodeVec.at(i).get();
+		if (!node || !node->isFunctionNode())
+			continue;
+
+		FunctionNode* funcNode = dynamic_cast<FunctionNode*>(node);
+		std::string funcName = funcNode->getFunction().getName();
+
+		int leftIdx = Individual::getLeftChildIdx(i);
+		int rightIdx = leftIdx + 1;
+
+		if (leftIdx > this->lastNodeIdx || rightIdx > this->lastNodeIdx)
+			continue;
+
+		Node* leftNode = this->nodeVec.at(leftIdx).get();
+		Node* rightNode = this->nodeVec.at(rightIdx).get();
+
+		// Ověření existence potomků
+		if (!leftNode || !rightNode)
+			continue;
+
+		// Ověření, že potomci jsou terminály
+		TerminalNode* leftTerm = dynamic_cast<TerminalNode*>(leftNode);
+		TerminalNode* rightTerm = dynamic_cast<TerminalNode*>(rightNode);
+		if (!leftTerm || !rightTerm)
+			continue;
+
+		double leftVal = leftTerm->getValue();
+		double rightVal = rightTerm->getValue();
+
+		// + nebo - s 0
+		if (funcName == "+") {
+			if (leftTerm->isConstant() && leftVal == 0.0) {
+				// nahradit pravým potomkem
+				this->nodeVec.at(i) = std::make_unique<TerminalNode>(*rightTerm);
+				this->nodeVec.at(leftIdx) = nullptr;
+				this->nodeVec.at(rightIdx) = nullptr;
+				continue;
+			}
+			if (rightTerm->isConstant() && rightVal == 0.0) {
+				// nahradit levým potomkem
+				this->nodeVec.at(i) = std::make_unique<TerminalNode>(*leftTerm);
+				this->nodeVec.at(leftIdx) = nullptr;
+				this->nodeVec.at(rightIdx) = nullptr;
+				continue;
+			}
+		}
+		if (funcName == "-") {
+			if (leftTerm->isConstant() && leftVal == 0.0) {
+				// 0 - x => -x
+				Terminal negTerm(-rightVal);
+				this->nodeVec.at(i) = std::make_unique<TerminalNode>(negTerm);
+				this->nodeVec.at(leftIdx) = nullptr;
+				this->nodeVec.at(rightIdx) = nullptr;
+				continue;
+			}
+			if (rightTerm->isConstant() && rightVal == 0.0) {
+				// x - 0 => x
+				this->nodeVec.at(i) = std::make_unique<TerminalNode>(*leftTerm);
+				this->nodeVec.at(leftIdx) = nullptr;
+				this->nodeVec.at(rightIdx) = nullptr;
+				continue;
+			}
+		}
+
+		// * nebo / s 1
+		if ((funcName == "*" || funcName == "/")) {
+			if (leftTerm->isConstant() && leftVal == 1.0) {
+				// nahradit pravým potomkem
+				this->nodeVec.at(i) = std::make_unique<TerminalNode>(*rightTerm);
+				this->nodeVec.at(leftIdx) = nullptr;
+				this->nodeVec.at(rightIdx) = nullptr;
+				continue;
+			}
+			if (rightTerm->isConstant() && rightVal == 1.0) {
+				// nahradit levým potomkem
+				this->nodeVec.at(i) = std::make_unique<TerminalNode>(*leftTerm);
+				this->nodeVec.at(leftIdx) = nullptr;
+				this->nodeVec.at(rightIdx) = nullptr;
+				continue;
+			}
+		}
+
+		// * s 0
+		if (funcName == "*") {
+			if ((leftTerm->isConstant() && leftVal == 0.0) || (rightTerm->isConstant() && rightVal == 0.0)) {
+				Terminal zeroTerm(0.0);
+				this->nodeVec.at(i) = std::make_unique<TerminalNode>(zeroTerm);
+				this->nodeVec.at(leftIdx) = nullptr;
+				this->nodeVec.at(rightIdx) = nullptr;
+				continue;
+			}
+		}
+
+		// / s levým potomkem 0
+		if (funcName == "/") {
+			if (leftTerm->isConstant() && leftVal == 0.0) {
+				Terminal zeroTerm(0.0);
+				this->nodeVec.at(i) = std::make_unique<TerminalNode>(zeroTerm);
+				this->nodeVec.at(leftIdx) = nullptr;
+				this->nodeVec.at(rightIdx) = nullptr;
+				continue;
+			}
+		}
+	}
+
+	this->updateStats();
 }
 
 void Individual::createDAG()

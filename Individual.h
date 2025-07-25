@@ -75,6 +75,7 @@ public:
 	void resetConstantTable();
 
 	Individual& operator=(const Individual& original);
+	friend bool operator==(const Individual& lhs, const Individual& rhs);
 
 	bool isLeafAtIdx(const int& idx) const;
 	bool isInnerNodeAtIdx(const int& idx) const;

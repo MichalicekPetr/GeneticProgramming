@@ -79,6 +79,11 @@ Terminal & TerminalNode::getTerminalReference()
 	return this->terminal;
 }
 
+const Terminal& TerminalNode::getTerminalConst() const
+{
+	return this->terminal;
+}
+
 // Pøepsáno
 Node* TerminalNode::createDeepCopy() const
 {
@@ -221,4 +226,9 @@ void FunctionNode::setFunc(Function newFunc)
 unique_ptr<Node> FunctionNode::clone() const
 {
 	return make_unique<FunctionNode>(*this);
+}
+
+const Function& FunctionNode::getFunction() const
+{
+	return this->function;
 }

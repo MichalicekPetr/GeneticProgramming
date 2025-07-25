@@ -51,6 +51,7 @@ public:
 	Node* createDeepCopy() const override;
 	void setFunc(Function newFunc);
 	unique_ptr<Node> clone() const override;
+	const Function& getFunction() const;
 };
 
 
@@ -74,6 +75,7 @@ public:
 	string toString() const override;
 	
 	Terminal & getTerminalReference();
+	const Terminal & getTerminalConst() const;
 	Node* createDeepCopy() const override;
 
 	double getValue() const;
