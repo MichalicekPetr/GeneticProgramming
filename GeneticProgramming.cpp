@@ -98,7 +98,7 @@ void GeneticProgramming::standartRun(const int& maxGenerationNum, const int& sta
         if (this->constantTuning) {
             omp_set_num_threads(this->threadCnt);
 
-#pragma omp parallel for schedule(static,1) reduction(+:accImp)
+#pragma omp parallel for schedule(static,1) reduction(+:accImp)  
             for (int i = 0; i < this->population.getSize(); i++) {
                 double improvementAcc = 0;
                 Individual& individualRef = population.at(i);
@@ -122,7 +122,7 @@ void GeneticProgramming::standartRun(const int& maxGenerationNum, const int& sta
                         }
                     }
 
-                    vector<double> constants = this->tuneConstants(individualRef, individualRef.getConstantTableRef().getTable(), dbMapPtr);
+                    vector<double> constants = this->tuneConstants(individualRef, vector<double>(0), dbMapPtr);
 
 #pragma omp critical
                     {
@@ -545,7 +545,6 @@ vector<double> GeneticProgramming::tuneConstants(Individual& individual, vector<
 	if (size == 0) {
 		return vector<double>(0);
 	}
-
 	double time = this->constantTuningMaxTime;
 	double valueMax = this->terminalSet.getMax();
 	double valueMin = this->terminalSet.getMin();

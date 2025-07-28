@@ -208,7 +208,8 @@ int main()
             "6 for hyperparam tuning\n"
             "7 for array representation test\n"
             "8 for PCT1 algorithm test\n"
-            "9 for PCT2 algorithm test\n" << endl;
+            "9 for PCT2 algorithm test\n"
+            "A pro experiment na měření rychlosti generování stromů\n" << endl;
         int choice;
         cin >> choice;
 
@@ -482,10 +483,10 @@ int main()
             TerminalSet termSet = TerminalSet(-5, 5, false, colNames);
 
             GeneticProgramming geneticProgramming = GeneticProgramming();
-			int threadCnt = 1;
+			int threadCnt = 7;
             geneticProgramming.setThreadCnt(threadCnt);
 
-            int popSize = 20;
+            int popSize = 50;
             geneticProgramming.setPopulation(Population(popSize, unique_ptr<PopulationInitMethod>(new RandomHalfFullHalfGrowInitialization())));
 
             geneticProgramming.setFunctionSet(funcSet);
@@ -495,7 +496,7 @@ int main()
             double replaceNodeMutProb = 0.01;
             geneticProgramming.setMutation(unique_ptr<Mutation>(new CombinedMutation(replaceNodeMutProb, subtreeMutProb, funcSet, termSet)));
 
-            int tournamentSize = 3;
+            int tournamentSize = 4;
             geneticProgramming.setSelection(unique_ptr<Selection>(new TournamentSelection(tournamentSize)));
 
             double crossoverProb = 0.7;
@@ -531,7 +532,7 @@ int main()
             geneticProgramming.setRandomIndividualProb(randomIndividualProb);
 
             bool constantTuning = true;
-            double constantTuningMaxTime = 0.5 ;
+            double constantTuningMaxTime = 1;
             geneticProgramming.setTuneConstants(constantTuning, constantTuningMaxTime);
 
             double vectorGA_crossoverProb = 0.7;
@@ -543,7 +544,7 @@ int main()
             geneticProgramming.setVectorGAParams(vectorGA_crossoverProb, vectorGA_mutationProb, vectorGA_tournamentSize,
                 vectorGA_randomIndividualProb, vectorGA_populationSize, vectorGA_newIndividualRatio);
 
-            bool datFile = true;
+            bool datFile = false;
             string GPdataFolderPath = "C:/Users/petrm/Desktop/GeneticPrograming/Data/DataFiles/GP/";
             string GPGAdataFolderPath = "C:/Users/petrm/Desktop/GeneticPrograming/Data/DataFiles/GP+GA/";
             geneticProgramming.setOutputFileParams(datFile, GPdataFolderPath, GPGAdataFolderPath);
@@ -553,14 +554,14 @@ int main()
             int windowWidth = 10;
             geneticProgramming.setWindowParams(useWindow, windowHeight, windowWidth);
 
-            geneticProgramming.setMaxDepth(8);
+            geneticProgramming.setMaxDepth(10);
 
 			bool mergeConstantOptimalization = false;
 			bool removeUselessBranchesOptimalization = false;
-			bool DAGOptimalization = true;
+			bool DAGOptimalization = false;
 			geneticProgramming.setOptimalizationParams(mergeConstantOptimalization, removeUselessBranchesOptimalization, DAGOptimalization);
 
-            geneticProgramming.standartRun(1000, 4, false);
+            geneticProgramming.standartRun(1000, 7, false);
         }
         else if (choice == 8) {
             MysqlConnection connection;
@@ -619,6 +620,7 @@ int main()
             test = Individual::generateRandomTreePCT1(4, 12, funcSet, termSet, pmap);
             cout << test << endl;
         }
+        /*
         else if (choice == 9) {
             MysqlConnection connection;
             connection.connectToDb("localhost", "root", "krtek", "testschema", 3306);
@@ -637,7 +639,68 @@ int main()
                 test = Individual::generateRandomTreePCT2(4, sizeDistribution, funcSet, termSet, pmap);
                 cout << test << endl;
             }
-        }
+        }*/
+        else if (choice == 9) {
+            MysqlConnection connection;
+            connection.connectToDb("localhost", "root", "krtek", "testschema", 3306);
+            vector<string> colNames = connection.getColNames("testschema", "testdb1");
+            colNames.erase(std::remove(colNames.begin(), colNames.end(), "y"), colNames.end());
+            FunctionSet funcSet = FunctionSet::createArithmeticFunctionSet();
+            TerminalSet termSet = TerminalSet(-5, 5, false, colNames);
+            map<string, double> pmap = {
+            {"+", 0.3}, {"*", 0.3}, {"-", 0.1}, {"%", 0.05}, {"neg", 0.2}, {"inv", 0.05} };
+
+
+			int treeCnt = 100;
+            int d = 15;
+
+			cout << "Size of poulation: " << treeCnt << endl;
+			cout << "Depth of individual (tree): " << d << endl;
+
+            vector<double> sizeDistribution = HelperFunc::generateNormalSizeDistribution(pow(2,d-1));
+
+            auto start1 = std::chrono::high_resolution_clock::now();
+			vector<Individual> population1;
+            for (int i = 0; i < treeCnt; i++) {
+                Individual tree = Individual::generateRandomTreeFullMethod(d, funcSet, termSet);
+				population1.push_back(tree);
+			}
+            auto end1 = std::chrono::high_resolution_clock::now();
+            auto duration1 = std::chrono::duration_cast<std::chrono::milliseconds>(end1 - start1).count();
+            cout << "Creating population took " << duration1 << " ms with full method" << endl;
+           
+            auto start2 = std::chrono::high_resolution_clock::now();
+            vector<Individual> population2;
+            for (int i = 0; i < treeCnt; i++) {
+                Individual tree = Individual::generateRandomTreeGrowMethod(d, funcSet, termSet);
+                population2.push_back(tree);
+            }
+            auto end2 = std::chrono::high_resolution_clock::now();
+            auto duration2 = std::chrono::duration_cast<std::chrono::milliseconds>(end2 - start2).count();
+            cout << "Creating population took " << duration2 << " ms with grow method" << endl;
+
+            auto start3 = std::chrono::high_resolution_clock::now();
+            vector<Individual> population3;
+            for (int i = 0; i < treeCnt; i++) {
+                Individual tree = Individual::generateRandomTreePCT1(d, pow(2, d-2), funcSet, termSet, pmap);
+                population3.push_back(tree);
+            }
+            auto end3 = std::chrono::high_resolution_clock::now();
+            auto duration3 = std::chrono::duration_cast<std::chrono::milliseconds>(end3 - start3).count();
+            cout << "Creating population took " << duration3 << " ms with PCT1" << endl;
+            
+            auto start4 = std::chrono::high_resolution_clock::now();
+            vector<Individual> population4;
+            for (int i = 0; i < treeCnt; i++) {
+                Individual tree = Individual::generateRandomTreePCT2(d, sizeDistribution, funcSet, termSet, pmap);
+                population4.push_back(tree);
+            }
+            auto end4 = std::chrono::high_resolution_clock::now();
+            auto duration4 = std::chrono::duration_cast<std::chrono::milliseconds>(end4 - start4).count();
+            cout << "Creating population took " << duration4 << " ms with PCT2" << endl;
+
+
+		}
         else {
             MysqlConnection connection;
             connection.connectToDb("localhost", "root", "krtek", "testschema", 3306);
