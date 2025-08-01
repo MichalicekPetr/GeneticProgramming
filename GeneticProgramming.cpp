@@ -413,6 +413,10 @@ void GeneticProgramming::standartRun(const int& maxGenerationNum, const int& sta
         cout << "Best fitness: " << bestScore << endl;
         cout << "Best individual (depth: " << bestOfBest.getMaxDepth() << "): " << endl << bestOfBest << endl;
         
+        ofstream txtfile("C:/Users/petrm/Desktop/Markov/Results/markov_results.txt", std::ios::app);
+        txtfile << "Generetions num: " << generationNum << endl;
+		txtfile << "Best fitness: " << bestScore << endl;
+        txtfile.close();
 
         if (this->datFile) {
             file.close();

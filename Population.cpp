@@ -1,5 +1,6 @@
 #include <iostream>
 
+#include "HelperFunc.h"
 #include "Population.h"
 #include "Individual.h"
 #include <vector>
@@ -54,4 +55,18 @@ int Population::getSize() const
 Individual & Population::at(const int & idx)
 {
 	return this->individuals.at(idx);
+}
+
+vector<Individual> PCT2Initialization::initPopulation(const int& depth, const FunctionSet& funcSet, const TerminalSet& termSet, const int& populationSize)
+{
+	vector<Individual> individuals(0);
+
+	map<string, double> pmap = {{"+", 0.3}, {"*", 0.3}, {"-", 0.1}, {"%", 0.05}, {"neg", 0.2}, {"inv", 0.05} };
+	vector<double> sizeDistribution = HelperFunc::generateNormalSizeDistribution(pow(2, depth - 1));
+
+	for (int i = 0; i < populationSize; i++) {
+		individuals.push_back(move(Individual::generateRandomTreePCT2(depth, sizeDistribution, funcSet, termSet, pmap)));
+	}
+
+	return individuals;
 }

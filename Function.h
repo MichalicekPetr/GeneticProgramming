@@ -32,6 +32,7 @@ public:
 	FunctionSet(const int & size = 0);
 	void addFunction(const Function& func);
 	static FunctionSet createArithmeticFunctionSet();
+	static FunctionSet createBinaryOnlyFunctionSet();
 	static FunctionSet createArithmeticFunctionSetNoDivide();
 
 	Function getRandomFunction() const;

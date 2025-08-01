@@ -68,6 +68,18 @@ FunctionSet FunctionSet::createArithmeticFunctionSet()
 	return functionSet;
 }
 
+FunctionSet FunctionSet::createBinaryOnlyFunctionSet()
+{
+	FunctionSet functionSet = FunctionSet();
+
+	functionSet.addFunction(Function("+", 2, [](const double& x, const double& y) { return x + y; }));
+	functionSet.addFunction(Function("-", 2, [](const double& x, const double& y) { return x - y; }));
+	functionSet.addFunction(Function("*", 2, [](const double& x, const double& y) { return x * y; }));
+	functionSet.addFunction(Function("%", 2, [](const double& x, const double& y) { return x / y; }));
+
+	return functionSet;
+}
+
 FunctionSet FunctionSet::createArithmeticFunctionSetNoDivide()
 {
 	FunctionSet functionSet = FunctionSet(4);

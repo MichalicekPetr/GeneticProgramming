@@ -17,6 +17,11 @@ public:
 	vector<Individual> initPopulation(const int& depth, const FunctionSet& funcSet, const TerminalSet& termSet, const int& populationSize) override;
 };
 
+class PCT2Initialization : public PopulationInitMethod {
+public:
+	vector<Individual> initPopulation(const int& depth, const FunctionSet& funcSet, const TerminalSet& termSet, const int& populationSize) override;
+};
+
 class Population
 {
 private:

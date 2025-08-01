@@ -207,7 +207,7 @@ int main()
             "5 for show row insert script\n"
             "6 for hyperparam tuning\n"
             "7 for array representation test\n"
-            "8 for PCT1 algorithm test\n"
+            "8 Markov chains experiment\n"
             "9 for PCT2 algorithm test\n"
             "A pro experiment na měření rychlosti generování stromů\n" << endl;
         int choice;
@@ -561,64 +561,108 @@ int main()
 			bool DAGOptimalization = false;
 			geneticProgramming.setOptimalizationParams(mergeConstantOptimalization, removeUselessBranchesOptimalization, DAGOptimalization);
 
-            geneticProgramming.standartRun(1000, 7, false);
+            geneticProgramming.standartRun(1000, 3, false);
         }
         else if (choice == 8) {
-            MysqlConnection connection;
-            connection.connectToDb("localhost", "root", "krtek", "testschema", 3306);
-            vector<string> colNames = connection.getColNames("testschema", "testdb1");
-            colNames.erase(std::remove(colNames.begin(), colNames.end(), "y"), colNames.end());
-            FunctionSet funcSet = FunctionSet::createArithmeticFunctionSet();
-            TerminalSet termSet = TerminalSet(-5, 5, false, colNames);
+            for (int d = 6; d <= 10; d++) {
+                for (int i = 0; i < 10; i++) {
+                    
+                    MysqlConnection connection;
+                    connection.connectToDb("localhost", "root", "krtek", "markov", 3306);
+                    vector<string> colNames = connection.getColNames("markov", "table_markov1");
+                    colNames.erase(std::remove(colNames.begin(), colNames.end(), "y"), colNames.end());
 
-            map<string, double> pmap = {
-                {"+", 0.3}, {"*", 0.3}, {"-", 0.1}, {"%", 0.05}, {"neg", 0.2}, {"inv", 0.05}
-            };
-            Individual test;
-            test = Individual::generateRandomTreePCT1(1, 1, funcSet, termSet, pmap);
-            cout << test << endl;
-            test = Individual::generateRandomTreePCT1(2, 2, funcSet, termSet, pmap);
-            cout << test << endl;
-            test = Individual::generateRandomTreePCT1(2, 3, funcSet, termSet, pmap);
-            cout << test << endl;
-            test = Individual::generateRandomTreePCT1(2, 2, funcSet, termSet, pmap);
-            cout << test << endl;
-            test = Individual::generateRandomTreePCT1(2, 3, funcSet, termSet, pmap);
-            cout << test << endl;
-            test = Individual::generateRandomTreePCT1(2, 2, funcSet, termSet, pmap);
-            cout << test << endl;
-            test = Individual::generateRandomTreePCT1(2, 3, funcSet, termSet, pmap);
-            cout << test << endl;
-            test = Individual::generateRandomTreePCT1(2, 2, funcSet, termSet, pmap);
-            cout << test << endl;
-            test = Individual::generateRandomTreePCT1(2, 3, funcSet, termSet, pmap);
-            cout << test << endl;
-            test = Individual::generateRandomTreePCT1(2, 2, funcSet, termSet, pmap);
-            cout << test << endl;
-            test = Individual::generateRandomTreePCT1(2, 3, funcSet, termSet, pmap);
-            cout << test << endl;
-            test = Individual::generateRandomTreePCT1(2, 2, funcSet, termSet, pmap);
-            cout << test << endl;
-            test = Individual::generateRandomTreePCT1(2, 3, funcSet, termSet, pmap);
-            cout << test << endl;
-            test = Individual::generateRandomTreePCT1(3, 4, funcSet, termSet, pmap);
-            cout << test << endl;
-            test = Individual::generateRandomTreePCT1(3, 5, funcSet, termSet, pmap);
-            cout << test << endl;
-            test = Individual::generateRandomTreePCT1(3, 6, funcSet, termSet, pmap);
-            cout << test << endl;
-            test = Individual::generateRandomTreePCT1(3, 7, funcSet, termSet, pmap);
-            cout << test << endl;
-            test = Individual::generateRandomTreePCT1(4, 8, funcSet, termSet, pmap);
-            cout << test << endl;
-            test = Individual::generateRandomTreePCT1(4, 9, funcSet, termSet, pmap);
-            cout << test << endl;
-            test = Individual::generateRandomTreePCT1(4, 10, funcSet, termSet, pmap);
-            cout << test << endl;
-            test = Individual::generateRandomTreePCT1(4, 11, funcSet, termSet, pmap);
-            cout << test << endl;
-            test = Individual::generateRandomTreePCT1(4, 12, funcSet, termSet, pmap);
-            cout << test << endl;
+                    FunctionSet funcSet = FunctionSet::createArithmeticFunctionSet();
+                    TerminalSet termSet = TerminalSet(-5, 5, false, colNames);
+
+                    GeneticProgramming geneticProgramming = GeneticProgramming();
+                    int threadCnt =15;
+                    geneticProgramming.setThreadCnt(threadCnt);
+
+                    int popSize = 100;
+                    geneticProgramming.setPopulation(Population(popSize, unique_ptr<PopulationInitMethod>(new RandomHalfFullHalfGrowInitialization())));
+
+                    geneticProgramming.setFunctionSet(funcSet);
+                    geneticProgramming.setTerminalSet(termSet);
+
+                    double subtreeMutProb = 0.09;
+                    double replaceNodeMutProb = 0.0175;
+                    geneticProgramming.setMutation(unique_ptr<Mutation>(new CombinedMutation(replaceNodeMutProb, subtreeMutProb, funcSet, termSet)));
+
+                    int tournamentSize = 3;
+                    geneticProgramming.setSelection(unique_ptr<Selection>(new TournamentSelection(tournamentSize)));
+
+                    double crossoverProb = 0.7;
+                    double leafPickProb = 0.1;
+                    double subtreeLeafPickProb = 0.1;
+                    double parentLeafPickProb = 0.8;
+                    geneticProgramming.setCrossover(unique_ptr<Crossover>(new TwoPointCrossover(leafPickProb, subtreeLeafPickProb, parentLeafPickProb)), crossoverProb);
+
+                    geneticProgramming.setFitness(unique_ptr<FitnessFunction>(new ClassicFitnessFunction()));
+
+                    string dbName = "markov";
+                    string tableName = "table_markov1";
+                    string primaryKey = "idx";
+                    bool saveDbToMemory = true;
+
+
+                    string target = "y";
+                    geneticProgramming.setTarget(target);
+
+                    string url = "localhost";
+                    string user = "root";
+                    string password = "krtek";
+                    int port = 3306;
+                    geneticProgramming.setLoginParams(url, user, password, port);
+
+                    geneticProgramming.initConnections(
+                        shared_ptr<Connection>(new MysqlConnection()),
+                        threadCnt, // nebo zadejte konkrétní počet vláken, např. 1
+                        dbName, tableName, primaryKey, saveDbToMemory
+                    );
+
+                    double randomIndividualProb = 0.1;
+                    geneticProgramming.setRandomIndividualProb(randomIndividualProb);
+
+                    bool constantTuning = true;
+                    double constantTuningMaxTime = 2;
+                    geneticProgramming.setTuneConstants(constantTuning, constantTuningMaxTime);
+
+                    double vectorGA_crossoverProb = 0.7;
+                    double vectorGA_mutationProb = 0.03;
+                    int vectorGA_populationSize = 50;
+                    int vectorGA_tournamentSize = 4;
+                    double vectorGA_randomIndividualProb = 0.03;
+                    double vectorGA_newIndividualRatio = 0.8;
+                    geneticProgramming.setVectorGAParams(vectorGA_crossoverProb, vectorGA_mutationProb, vectorGA_tournamentSize,
+                        vectorGA_randomIndividualProb, vectorGA_populationSize, vectorGA_newIndividualRatio);
+
+                    bool datFile = false;
+                    string GPdataFolderPath = "C:/Users/petrm/Desktop/GeneticPrograming/Data/DataFiles/GP/";
+                    string GPGAdataFolderPath = "C:/Users/petrm/Desktop/GeneticPrograming/Data/DataFiles/GP+GA/";
+                    geneticProgramming.setOutputFileParams(datFile, GPdataFolderPath, GPGAdataFolderPath);
+
+                    bool useWindow = false;
+                    int windowHeight = 2;
+                    int windowWidth = 10;
+                    geneticProgramming.setWindowParams(useWindow, windowHeight, windowWidth);
+
+                    geneticProgramming.setMaxDepth(d);
+
+                    bool mergeConstantOptimalization = false;
+                    bool removeUselessBranchesOptimalization = false;
+                    bool DAGOptimalization = false;
+                    geneticProgramming.setOptimalizationParams(mergeConstantOptimalization, removeUselessBranchesOptimalization, DAGOptimalization);
+
+                    ofstream file("C:/Users/petrm/Desktop/Markov/Results/markov_results.txt", std::ios::app);
+					file << "====================================================================" << endl;
+                    file << "Depth: " << d << ", Iteration: " << i << endl;
+                    file.close();
+
+                    geneticProgramming.standartRun(1000, d, false);
+
+                }
+            }   
         }
         /*
         else if (choice == 9) {
